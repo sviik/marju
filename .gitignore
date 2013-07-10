@@ -1,4 +1,7 @@
-﻿*.py[cod]
+﻿# Pycharm
+.idea
+
+*.py[cod]
 *.log
 *.txt
 
