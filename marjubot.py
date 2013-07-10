@@ -365,8 +365,8 @@ class MarjuBot(SingleServerIRCBot):
         match = re.search(regexp, html)
         if (match):
             linn = linn.encode("utf-8")
-            temp = match.group("value").encode("utf-8")
-            town = match.group("town").encode("utf-8")
+            temp = match.group("value")
+            town = match.group("town")
             return linn + town + ": " + temp
 
     def get_tartu_ilm(self):
@@ -443,7 +443,15 @@ class MarjuBot(SingleServerIRCBot):
         xml = urlopen(url).read()
         dom = parseString(xml)
         markers = dom.getElementsByTagName('marker')
-        param = parameter.lower()
+
+        if (parameter == ''):
+            beaches = 'Olemasolevad rannad: '
+            for marker in markers:
+              beach = marker.getAttribute('town').lower().encode("utf-8")
+              beaches = beaches + beach + ', '
+            return beaches[:-2]
+
+        param = parameter.lower().decode("utf-8")
         for marker in markers:
             beach = marker.getAttribute('town').lower()
             if(beach.startswith(param)):
@@ -461,6 +469,7 @@ class MarjuBot(SingleServerIRCBot):
 !seen [nick] - millal kasutaja viimati kanalis viibis
 !google [otsingufraas] - Google otsing
 !ilm [asukoht] - väljastab asukoha temperatuuri. Parameetrita käsk annab asukohaloendi
+!rand [rand] - väljastab rannainfot. Parameetrita käsk annab loendi
 !omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi
 !imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi
 !fml - Suvaline postitus saidilt fmylife.com"""
