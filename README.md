@@ -14,9 +14,6 @@ Marju 2.0
 - Debugimiseks seada failis irclib.py lipu DEBUG väärtuseks 1
 
 +++TODO list+++
-- OMX'i regexp uuendada
-- Ilmaotsingus ei tööta kõigil täpitähed. Võiks näiteks lubada 'õ' asemel kasutada '6' jne
-- Rannailmafunktsioon korda. UnicodeEncodeError.
 - Varemlingitud URL'ide detectimine
 - Youtube videode otsing
 - Päringud eraldi threadi, juhuks kui on timeout vms

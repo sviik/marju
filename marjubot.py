@@ -3,6 +3,7 @@
 
 from random import choice
 from time import gmtime, strftime, localtime, time
+from string import replace
 from ircbot import SingleServerIRCBot, Channel
 from irclib import nm_to_n, nm_to_h, irc_lower, ip_numstr_to_quad, ip_quad_to_numstr, nm_to_uh, is_channel, parse_channel_modes
 from datetime import datetime
@@ -353,13 +354,19 @@ class MarjuBot(SingleServerIRCBot):
             return self.get_tartu_ilm()
         if (linn == ''):
             return "Olemasolevad kohad: Dirhami, Heltermaa, Jõgeva, Jõhvi, Kihnu, Kunda, Kuusiku, Lääne-Nigula, Narva-Jõesuu, Pakri, Pärnu, Ristna, Rohuküla, Rohuneeme, Roomassaare, Ruhnu, Sõrve, Tallinn, Tartu, Tiirikoja, Türi, Valga, Viljandi, Vilsandi, Virtsu, Võru, Väike-Maarja"
+        linn = replace(linn, '6', 'õ').decode("utf-8")
+        linn = linn.encode("utf-8")
+        linn = replace(linn, '2', 'ä').decode("utf-8")
+        linn = linn.encode("utf-8")
+        linn = replace(linn, 'y', 'ü').decode("utf-8")
         url = 'http://www.emhi.ee/index.php?ide=21&v_kaart=0'
         html = urlopen(url).read()
         regexp = '<td height="30">' + linn + '(?P<town>.*?)</td>' + "\n\t\t\t" + '<td align="center">(.*?)</td>' + "\n\t\t\t" + '<td align="center">(?P<value>.*?)</td>'
         match = re.search(regexp, html)
         if (match):
-            temp = match.group("value")
-            town = match.group("town")
+            linn = linn.encode("utf-8")
+            temp = match.group("value").encode("utf-8")
+            town = match.group("town").encode("utf-8")
             return linn + town + ": " + temp
 
     def get_tartu_ilm(self):
@@ -376,8 +383,7 @@ class MarjuBot(SingleServerIRCBot):
         url = "http://www.nasdaqomxbaltic.com/market/?pg=mainlist&lang=et"
         stock = parameter.upper()
         html = urlopen(url).read()
-        # TODO - html'i muudeti, regexpi peab uuendama
-        regexp = stock + '[1A][LRT]</a></td> \n\t\t\t\t\t\t\t\t<td>[TLNRIGV]{3} </td> \n\t\t\t\t<td>[EURLTV]{3}</td> \n\t\t\t\t<td>(?P<price>.*?)<\/td> \n\t\t\t\t\t\t\t\t<td>(.*?)</td> \n\t\t\t\t<td class="[negpos]{0,3}">(?P<change>.*?)</td>'
+        regexp = stock + '[1A][LRT]</td> \n\t\t\t\t\t\t\t\t<td>[TLNRIGV]{3}</td> \n\t\t\t\t<td>[EURLTV]{3}</td> \n\t\t\t\t<td>(?P<price>.*?)<\/td> \n\t\t\t\t\t\t\t\t<td>(.*?)</td> \n\t\t\t\t<td class="[negpos]{0,3}">(?P<change>.*?)</td>'
         match = re.search(regexp, html)
         if (not match):
             return "Ei leidnud seda aktsiat"
@@ -391,7 +397,7 @@ class MarjuBot(SingleServerIRCBot):
         if ( not re.search(number,change)):
             change = ' 0%'
             colour = '9'
-        return lastPrice + '' + colour + change
+        return lastPrice + ' ' + '' + colour + change
 
     def get_fml(self):
         url = "http://api.fmylife.com/view/random/?key=" + FML_KEY + "&language=en"
@@ -407,10 +413,10 @@ class MarjuBot(SingleServerIRCBot):
         r = urlopen(url).read()
         response = json.loads(r)
         if (response['Response'] == "True"):
-            title = response["Title"]
-            id = response["imdbID"]
-            year = response["Year"]
-            rating = response["imdbRating"]
+            title = response["Title"].encode("utf-8")
+            id = response["imdbID"].encode("utf-8")
+            year = response["Year"].encode("utf-8")
+            rating = response["imdbRating"].encode("utf-8")
             return title + " (" + year + ") [" + rating + "] http://www.imdb.com/title/" + id + "/";
         else:
             return "Ei leidnud seda filmi"
@@ -432,7 +438,6 @@ class MarjuBot(SingleServerIRCBot):
             result.append(item['link'])
         return result
 
-    #TODO - ei tööta atm
     def get_rand(self, parameter):
         url = "http://www.g4s.ee/beaches2.php"
         xml = urlopen(url).read()
@@ -442,12 +447,12 @@ class MarjuBot(SingleServerIRCBot):
         for marker in markers:
             beach = marker.getAttribute('town').lower()
             if(beach.startswith(param)):
-                waterTemp = marker.getAttribute('watertemp')
-                airTemp = marker.getAttribute('airtemp')
-                pop = marker.getAttribute('pop')
-                beach = marker.getAttribute('town')
-                time = marker.getAttribute('time')
-                return beach + " kell " + time + " - Vesi: " + waterTemp + " 6hk: " + airTemp + " Inimesi: "+ pop
+                waterTemp = marker.getAttribute('watertemp').encode("utf-8")
+                airTemp = marker.getAttribute('airtemp').encode("utf-8")
+                pop = marker.getAttribute('pop').encode("utf-8")
+                beach = marker.getAttribute('town').encode("utf-8")
+                time = marker.getAttribute('time').encode("utf-8")
+                return beach + " kell " + time + " - Vesi: " + waterTemp + " Õhk: " + airTemp + " Inimesi: "+ pop
 
     def send_help(self, c, nick):
         help = """!quote [otsisõna] - väljastab suvalise otsisõna sisaldava tsitaadi
@@ -493,9 +498,7 @@ class MarjuBot(SingleServerIRCBot):
         elif cmd == "fml":
             msg = self.get_fml()
         elif cmd == "rand":
-            pass
-            #msg = self.get_rand(parameter)\
-            #UnicodeEncodeError
+            msg = self.get_rand(parameter)
         elif cmd == "imdb":
             msg = self.get_imdb(parameter)
         elif cmd == "seen":
