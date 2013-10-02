@@ -476,7 +476,8 @@ class MarjuBot(SingleServerIRCBot):
 !ilm [asukoht] - väljastab asukoha temperatuuri. Parameetrita käsk annab asukohaloendi
 !omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi
 !imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi
-!fml - Suvaline postitus saidilt fmylife.com"""
+!fml - Suvaline postitus saidilt fmylife.com
+!nom - Kokkuvõte tänastest Tartu restoranide päevapakkumistest"""
         help = help.split('\n')
         for line in help:
             c.notice(nick, line)
