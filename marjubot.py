@@ -29,6 +29,9 @@ FML_KEY = config.FML_KEY
 
 youtubeUrlRe = re.compile('(youtube\.com/watch\?v=|youtube\.com/watch\?.*&v=|youtu.be/)(?P<id>[A-Za-z0-9_-]{11})')
 tartuIlmRe = re.compile('Temperatuur</A></TD><TD align="left" width="45%"><B>(?P<value>.*?) &deg;C</B>')
+paevapraedRe = re.compile('<p class="food" id="(PREMIUM|TRUFFE|VAGAMAMA|FEELGOOD|POLPO)_FOOD">(.+?)</p>', re.DOTALL)
+noirRe = re.compile('<div class="article-box.+?location = \'(.+?)\'">')
+noirArticleRe = re.compile('<div class="content-texts-wrapper.+?<h1>(.+?)<span.+?>(.+?)</span.+?<h2>(.+?)</h2>', re.DOTALL)
 
 class MarjuBot(SingleServerIRCBot):
     def __init__(self, channels, nickname, password, server, port=6667):
@@ -438,6 +441,21 @@ class MarjuBot(SingleServerIRCBot):
             result.append(item['link'])
         return result
 
+    def get_nom(self):
+        result = []
+        link = re.search(noirRe, urlopen("http://www.cafenoir.ee").read())
+        if (link):
+            noirNom = re.search(noirArticleRe, urlopen("http://www.cafenoir.ee" + link.group(1)).read())
+            if (noirNom):
+                result.append("Noir: " + noirNom.group(1).strip(' \t\n\r') + "; " + noirNom.group(3).strip(' \t\n\r') + " (" + noirNom.group(2).strip(' \t\n\r') + ")")
+
+        matches = re.findall(paevapraedRe, urlopen("http://www.paevapraed.com").read())
+        if (matches):
+            for match in matches:
+                result.append(match[0] + ": " + match[1].replace("<br/>", "; ").replace("<br />", "; "))
+
+        return result
+
     def get_rand(self, parameter):
         url = "http://www.g4s.ee/beaches2.php"
         xml = urlopen(url).read()
@@ -472,7 +490,8 @@ class MarjuBot(SingleServerIRCBot):
 !rand [rand] - väljastab rannainfot. Parameetrita käsk annab loendi
 !omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi
 !imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi
-!fml - Suvaline postitus saidilt fmylife.com"""
+!fml - Suvaline postitus saidilt fmylife.com
+!nom - Kokkuvõte tänastest Tartu restoranide päevapakkumistest"""
         help = help.split('\n')
         for line in help:
             c.notice(nick, line)
@@ -516,6 +535,8 @@ class MarjuBot(SingleServerIRCBot):
             msg = self.get_google(parameter)
         elif cmd == "h":
             self.send_help(c, nick)
+        elif cmd == "nom":
+            msg = self.get_nom()
         if (msg and type(msg) is not list):
             c.privmsg(channel, msg)
             msg = "<" + c.get_nickname() + "> " + msg
