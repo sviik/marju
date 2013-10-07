@@ -2,12 +2,10 @@
 # coding=utf-8
 
 from random import choice
-from time import gmtime, strftime, localtime, time
-from string import replace
+from time import strftime, localtime, time
 from ircbot import SingleServerIRCBot, Channel
-from irclib import nm_to_n, nm_to_h, irc_lower, ip_numstr_to_quad, ip_quad_to_numstr, nm_to_uh, is_channel, parse_channel_modes
+from irclib import nm_to_n, nm_to_uh, is_channel, parse_channel_modes
 from datetime import datetime
-from xml.dom.minidom import parseString
 import re
 import json
 from urllib import urlopen
@@ -16,6 +14,7 @@ import conf.config as config
 import logging
 import sys
 import traceback
+import pluginloader
 
 NICK = config.NICK
 PASSWORD = config.PASSWORD
@@ -23,15 +22,9 @@ SERVER = config.SERVER
 PORT = config.PORT
 OWNER_NICK = config.OWNER_NICK
 OWNER_PASS=config.OWNER_PASS
-GOOGLE_KEY = config.GOOGLE_KEY
-GOOGLE_CX = config.GOOGLE_CX
-FML_KEY = config.FML_KEY
+PLUGINS = pluginloader.findAll()
 
 youtubeUrlRe = re.compile('(youtube\.com/watch\?v=|youtube\.com/watch\?.*&v=|youtu.be/)(?P<id>[A-Za-z0-9_-]{11})')
-tartuIlmRe = re.compile('Temperatuur</A></TD><TD align="left" width="45%"><B>(?P<value>.*?) &deg;C</B>')
-paevapraedRe = re.compile('<p class="food" id="(PREMIUM|TRUFFE|VAGAMAMA|FEELGOOD|POLPO)_FOOD">(.+?)</p>', re.DOTALL)
-noirRe = re.compile('<div class="article-box.+?location = \'(.+?)\'">')
-noirArticleRe = re.compile('<div class="content-texts-wrapper.+?<h1>(.+?)<span.+?>(.+?)</span.+?<h2>(.+?)</h2>', re.DOTALL)
 
 class MarjuBot(SingleServerIRCBot):
     def __init__(self, channels, nickname, password, server, port=6667):
@@ -91,32 +84,13 @@ class MarjuBot(SingleServerIRCBot):
         if (len(command) > 1):
             parameter = command[1].rstrip('\n')
         command = command[0]
-        self.log_msg(c, e)
+        self.logPublicMessage(c, e)
         if (len(command) > 1 and command[0] == "!"):
-            self.do_command(c, e, command[1:], parameter)
+            self.doCommand(c, e, command[1:], parameter)
         else:
-            self.do_youtube(c, e)
-            self.ai(c, e)
+            self.doYoutube(c, e)
+            self.doAI(c, e)
         return
-
-    def do_youtube(self, c, e):
-        channel = e.target()
-        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].ai):
-            return
-        msg = e.arguments()[0].strip()
-        matches = re.findall(youtubeUrlRe, msg)
-        if (not matches):
-            return
-        for match in matches:
-            id = match[1]
-            url = 'http://gdata.youtube.com/feeds/api/videos/' + id + '?v=2&alt=jsonc'
-            result = urlopen(url).read()
-            response = json.loads(result)
-            if ('error' in response):
-                continue
-            title = response['data']['title'].encode("utf-8")
-            c.privmsg(channel, title)
-            self.log(channel, "<" + c.get_nickname() + "> " + title)
 
     def on_pubnotice(self, c, e):
         message = e.arguments()[0].strip()
@@ -125,7 +99,105 @@ class MarjuBot(SingleServerIRCBot):
         message = '-' + nick + ':' + channel + '- ' + message
         self.log(channel, message)
 
-    def ai(self, c, e):
+    def on_nick(self, c, e):
+        before = nm_to_n(e.source())
+        after = e.target()
+        for name, ch in self.channels.items():
+            if ch.has_user(before):
+                self.log(name, '* ' + before + ' is now known as ' + after)
+                self.doSeen(before, name, False)
+                self.doSeen(after, name, True)
+
+    def on_join(self, c, e):
+        nick = nm_to_n(e.source())
+        channel = e.target()
+        if (nick == c.get_nickname()):
+            if (not channel in self.channels):
+                newChannel = Channel()
+                newChannel.logging = self.channelsDict[channel]["logging"]
+                newChannel.folder = self.channelsDict[channel]["folder"]
+                newChannel.ai = self.channelsDict[channel]["ai"]
+                newChannel.quoting = self.channelsDict[channel]["quoting"]
+                self.channels[channel] = newChannel
+            self.channels[channel].add_user(nick)
+            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
+            self.logWithoutTime(e.target(), "\nSession Start: " + time)
+            self.logWithoutTime(e.target(), "Session Ident: " + channel)
+            self.log(e.target(), "* Now talking in " + channel)
+            return
+        self.channels[channel].add_user(nick)
+        userHost = nm_to_uh(e.source())
+        self.log(channel, "* " + nick + " (" + userHost + ") has joined " + channel)
+        self.doSeen(nick, channel, True)
+
+    def on_part(self, c, e):
+        channel = e.target()
+        userHost = nm_to_uh(e.source())
+        nick = nm_to_n(e.source())
+        if (nick == c.get_nickname()):
+            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
+            self.logWithoutTime(e, "Session Close: " + time)
+            return
+        self.log(e.target(), "* " + nick + " (" + userHost + ") has left " + channel)
+        self.doSeen(nick, channel, False)
+
+    def on_action(self, c, e):
+        nick = "<" + nm_to_n(e.source()) + "> "
+        msg = e.arguments()[0]
+        self.log(e.target(), "* " + nick + msg)
+
+    def on_quit(self, c, e):
+        nick = nm_to_n(e.source())
+        userHost = nm_to_uh(e.source())
+        for name, ch in self.channels.items():
+            if ch.has_user(nick):
+                self.log(name, "* " + nick + " (" + userHost + ") Quit")
+                self.doSeen(nick, name, False)
+
+    def on_kick(self, c, e):
+        kicker = nm_to_n(e.source())
+        kickee = e.arguments()[0]
+        if (kickee == c.get_nickname()):
+            self.log(e.target(), "* You were kicked by " + kicker)
+            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
+            self.logWithoutTime(e.target(), "Session Close: " + time)
+            return
+        self.log(e.target(), "* " + kickee + " was kicked by " + kicker)
+        self.doSeen(kickee, e.target(), False)
+
+    def on_mode(self, c, e):
+        modes = parse_channel_modes(" ".join(e.arguments()))
+        nick = nm_to_n(e.source())
+        for mode in modes:
+            signedMode = mode[0] + mode[1]
+            if mode[2] is None:
+                mode[2] = ""
+            else:
+                mode[2] = " " + mode[2]
+            self.log(e.target(), "* " + nick + " sets mode " + signedMode + mode[2])
+
+    def logPublicMessage(self, c, e):
+        nick = '<' + nm_to_n(e.source()) + '>'
+        text =  ' ' + e.arguments()[0]
+        log = nick + text
+        self.log(e.target(), log)
+
+    def log(self, channel, msg):
+        if (not self.channels[channel].logging):
+            return
+        time = strftime("[%H:%M:%S] ", localtime())
+        folder = self.channels[channel].folder
+        with open(folder + "/log.txt", "a") as f:
+            f.write(time + msg + "\n")
+
+    def logWithoutTime(self, channel, msg):
+        if (not self.channels[channel].logging):
+            return
+        folder = self.channels[channel].folder
+        with open(folder + "/log.txt", "a") as f:
+            f.write(msg + "\n")
+
+    def doAI(self, c, e):
         channel = e.target()
         if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].ai):
             return
@@ -156,38 +228,26 @@ class MarjuBot(SingleServerIRCBot):
         with open(folder + "/sonavara.txt", "a") as f:
             f.write(msg + "\n")
 
-    def on_nick(self, c, e):
-        before = nm_to_n(e.source())
-        after = e.target()
-        for name, ch in self.channels.items():
-            if ch.has_user(before):
-                self.log(name, '* ' + before + ' is now known as ' + after)
-                self.seen(before, name, False)
-                self.seen(after, name, True)
-
-    def on_join(self, c, e):
-        nick = nm_to_n(e.source())
+    def doYoutube(self, c, e):
         channel = e.target()
-        if (nick == c.get_nickname()):
-            if (not channel in self.channels):
-                newChannel = Channel()
-                newChannel.logging = self.channelsDict[channel]["logging"]
-                newChannel.folder = self.channelsDict[channel]["folder"]
-                newChannel.ai = self.channelsDict[channel]["ai"]
-                newChannel.quoting = self.channelsDict[channel]["quoting"]
-                self.channels[channel] = newChannel
-            self.channels[channel].add_user(nick)
-            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
-            self.logWithoutTime(e.target(), "\nSession Start: " + time)
-            self.logWithoutTime(e.target(), "Session Ident: " + channel)
-            self.log(e.target(), "* Now talking in " + channel)
+        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].ai):
             return
-        self.channels[channel].add_user(nick)
-        userHost = nm_to_uh(e.source())
-        self.log(channel, "* " + nick + " (" + userHost + ") has joined " + channel)
-        self.seen(nick, channel, True)
+        msg = e.arguments()[0].strip()
+        matches = re.findall(youtubeUrlRe, msg)
+        if (not matches):
+            return
+        for match in matches:
+            id = match[1]
+            url = 'http://gdata.youtube.com/feeds/api/videos/' + id + '?v=2&alt=jsonc'
+            result = urlopen(url).read()
+            response = json.loads(result)
+            if ('error' in response):
+                continue
+            title = response['data']['title'].encode("utf-8")
+            c.privmsg(channel, title)
+            self.log(channel, "<" + c.get_nickname() + "> " + title)
 
-    def seen(self, nick, channel, isJoin):
+    def doSeen(self, nick, channel, isJoin):
         unixTime = str(int(time()))
         folder = self.channels[channel].folder
         f = open(folder + "/seen.txt","r")
@@ -218,74 +278,7 @@ class MarjuBot(SingleServerIRCBot):
                 f.write(newLine)
         f.close()
 
-    def on_part(self, c, e):
-        channel = e.target()
-        userHost = nm_to_uh(e.source())
-        nick = nm_to_n(e.source())
-        if (nick == c.get_nickname()):
-            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
-            self.logWithoutTime(e, "Session Close: " + time)
-            return
-        self.log(e.target(), "* " + nick + " (" + userHost + ") has left " + channel)
-        self.seen(nick, channel, False)
-
-    def on_action(self, c, e):
-        nick = "<" + nm_to_n(e.source()) + "> "
-        msg = e.arguments()[0]
-        self.log(e.target(), "* " + nick + msg)
-
-    def on_quit(self, c, e):
-        nick = nm_to_n(e.source())
-        userHost = nm_to_uh(e.source())
-        for name, ch in self.channels.items():
-            if ch.has_user(nick):
-                self.log(name, "* " + nick + " (" + userHost + ") Quit")
-                self.seen(nick, name, False)
-
-    def on_kick(self, c, e):
-        kicker = nm_to_n(e.source())
-        kickee = e.arguments()[0]
-        if (kickee == c.get_nickname()):
-            self.log(e.target(), "* You were kicked by " + kicker)
-            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
-            self.logWithoutTime(e.target(), "Session Close: " + time)
-            return
-        self.log(e.target(), "* " + kickee + " was kicked by " + kicker)
-        self.seen(kickee, e.target(), False)
-
-    def on_mode(self, c, e):
-        modes = parse_channel_modes(" ".join(e.arguments()))
-        nick = nm_to_n(e.source())
-        for mode in modes:
-            signedMode = mode[0] + mode[1]
-            if mode[2] is None:
-                mode[2] = ""
-            else:
-                mode[2] = " " + mode[2]
-            self.log(e.target(), "* " + nick + " sets mode " + signedMode + mode[2])
-
-    def log_msg(self, c, e):
-        nick = '<' + nm_to_n(e.source()) + '>'
-        text =  ' ' + e.arguments()[0]
-        log = nick + text
-        self.log(e.target(), log)
-
-    def log(self, channel, msg):
-        if (not self.channels[channel].logging):
-            return
-        time = strftime("[%H:%M:%S] ", localtime())
-        folder = self.channels[channel].folder
-        with open(folder + "/log.txt", "a") as f:
-            f.write(time + msg + "\n")
-
-    def logWithoutTime(self, channel, msg):
-        if (not self.channels[channel].logging):
-            return
-        folder = self.channels[channel].folder
-        with open(folder + "/log.txt", "a") as f:
-            f.write(msg + "\n")
-
-    def get_quote(self, channel, parameter):
+    def getQuote(self, channel, parameter):
         folder = self.channels[channel].folder
         file = open(folder + "/tsitaadid.txt")
         matches = []
@@ -298,7 +291,7 @@ class MarjuBot(SingleServerIRCBot):
         file.close()
         return None
 
-    def get_seen(self, channel, parameter):
+    def getSeen(self, channel, parameter):
         if (not self.channels[channel].seen):
             return
         folder = self.channels[channel].folder
@@ -333,13 +326,12 @@ class MarjuBot(SingleServerIRCBot):
             return result
         return "Kasutajat " + parameter + " ei leitud."
 
-    def add_quote(self, channel, parameter):
+    def addquote(self, channel, parameter):
         folder = self.channels[channel].folder
         with open(folder + "/tsitaadid.txt", "a") as f:
             f.write(parameter + "\n")
 
-
-    def quote_stat(self, channel, parameter):
+    def getQuotestat(self, channel, parameter):
         folder = self.channels[channel].folder
         if (not parameter):
             count = sum(1 for line in open(folder + '/tsitaadid.txt'))
@@ -351,152 +343,19 @@ class MarjuBot(SingleServerIRCBot):
                 count += 1
         return 'Sõna "' + parameter + '" kohta on ' + str(count) + " tsitaati."
 
-    def get_ilm(self, parameter):
-        linn = parameter.title()
-        if (linn == 'Tar' or linn == 'Tart' or linn == 'Tartu'):
-            return self.get_tartu_ilm()
-        if (linn == ''):
-            return "Olemasolevad kohad: Dirhami, Heltermaa, Jõgeva, Jõhvi, Kihnu, Kunda, Kuusiku, Lääne-Nigula, Narva-Jõesuu, Pakri, Pärnu, Ristna, Rohuküla, Rohuneeme, Roomassaare, Ruhnu, Sõrve, Tallinn, Tartu, Tiirikoja, Türi, Valga, Viljandi, Vilsandi, Virtsu, Võru, Väike-Maarja"
-        linn = replace(linn, '6', 'õ').decode("utf-8")
-        linn = linn.encode("utf-8")
-        linn = replace(linn, '2', 'ä').decode("utf-8")
-        linn = linn.encode("utf-8")
-        linn = replace(linn, 'y', 'ü').decode("utf-8")
-        url = 'http://www.emhi.ee/index.php?ide=21&v_kaart=0'
-        html = urlopen(url).read()
-        regexp = '<td height="30">' + linn + '(?P<town>.*?)</td>' + "\n\t\t\t" + '<td align="center">(.*?)</td>' + "\n\t\t\t" + '<td align="center">(?P<value>.*?)</td>'
-        match = re.search(regexp, html)
-        if (match):
-            linn = linn.encode("utf-8")
-            temp = match.group("value")
-            town = match.group("town")
-            return linn + town + ": " + temp
-
-    def get_tartu_ilm(self):
-        url = "http://meteo.physic.ut.ee/et/frontmain.php"
-        html = urlopen(url).read()
-        match = re.search(tartuIlmRe, html)
-        if (match):
-            temp = match.group("value")
-            return "Tartu: " + temp
-
-    def get_omx(self, parameter):
-        if parameter is None or parameter is "":
-            return
-        url = "http://www.nasdaqomxbaltic.com/market/?pg=mainlist&lang=et"
-        stock = parameter.upper()
-        html = urlopen(url).read()
-        regexp = stock + '[1A][LRT]</td> \n\t\t\t\t\t\t\t\t<td>[TLNRIGV]{3}</td> \n\t\t\t\t<td>[EURLTV]{3}</td> \n\t\t\t\t<td>(?P<price>.*?)<\/td> \n\t\t\t\t\t\t\t\t<td>(.*?)</td> \n\t\t\t\t<td class="[negpos]{0,3}">(?P<change>.*?)</td>'
-        match = re.search(regexp, html)
-        if (not match):
-            return "Ei leidnud seda aktsiat"
-        lastPrice = match.group("price")
-        change = match.group("change")
-        number = '[0-9]'
-        positive = '[+]'
-        colour = '4'
-        if (re.search(positive,change)):
-            colour = '3'
-        if ( not re.search(number,change)):
-            change = ' 0%'
-            colour = '9'
-        return lastPrice + ' ' + '' + colour + change
-
-    def get_fml(self):
-        url = "http://api.fmylife.com/view/random/?key=" + FML_KEY + "&language=en"
-        content = urlopen(url).read()
-        dom = parseString(content)
-        text = dom.getElementsByTagName('text')[0]
-        value = text.firstChild.nodeValue.encode("utf-8")
-        return value
-
-    def get_imdb(self, parameter):
-        title = parameter.replace(' ', '+')
-        url = "http://www.imdbapi.com/" + "?t=" + title
-        r = urlopen(url).read()
-        response = json.loads(r)
-        if (response['Response'] == "True"):
-            title = response["Title"].encode("utf-8")
-            id = response["imdbID"].encode("utf-8")
-            year = response["Year"].encode("utf-8")
-            rating = response["imdbRating"].encode("utf-8")
-            return title + " (" + year + ") [" + rating + "] http://www.imdb.com/title/" + id + "/";
-        else:
-            return "Ei leidnud seda filmi"
-
-    def get_google(self, parameter):
-        url = 'https://www.googleapis.com/customsearch/v1'
-        key = GOOGLE_KEY
-        cx = GOOGLE_CX
-        num = '&num=3'
-        query = '&q=' + parameter.replace(' ', '+')
-        url = url + key + cx + num + query
-        r = urlopen(url).read()
-        response = json.loads(r)
-        if (response['searchInformation']['totalResults'] == '0'):
-            return 'Ei leidnud midagi'
-        items = response['items']
-        result = []
-        for item in items:
-            result.append(item['link'])
-        return result
-
-    def get_nom(self):
-        result = []
-        link = re.search(noirRe, urlopen("http://www.cafenoir.ee").read())
-        if (link):
-            noirNom = re.search(noirArticleRe, urlopen("http://www.cafenoir.ee" + link.group(1)).read())
-            if (noirNom):
-                result.append("Noir: " + noirNom.group(1).strip(' \t\n\r') + "; " + noirNom.group(3).strip(' \t\n\r') + " (" + noirNom.group(2).strip(' \t\n\r') + ")")
-
-        matches = re.findall(paevapraedRe, urlopen("http://www.paevapraed.com").read())
-        if (matches):
-            for match in matches:
-                result.append(match[0] + ": " + match[1].replace("<br/>", "; ").replace("<br />", "; "))
-
-        return result
-
-    def get_rand(self, parameter):
-        url = "http://www.g4s.ee/beaches2.php"
-        xml = urlopen(url).read()
-        dom = parseString(xml)
-        markers = dom.getElementsByTagName('marker')
-
-        if (parameter == ''):
-            beaches = 'Olemasolevad rannad: '
-            for marker in markers:
-              beach = marker.getAttribute('town').lower().encode("utf-8")
-              beaches = beaches + beach + ', '
-            return beaches[:-2]
-
-        param = parameter.lower().decode("utf-8")
-        for marker in markers:
-            beach = marker.getAttribute('town').lower()
-            if(beach.startswith(param)):
-                waterTemp = marker.getAttribute('watertemp').encode("utf-8")
-                airTemp = marker.getAttribute('airtemp').encode("utf-8")
-                pop = marker.getAttribute('pop').encode("utf-8")
-                beach = marker.getAttribute('town').encode("utf-8")
-                time = marker.getAttribute('time').encode("utf-8")
-                return beach + " kell " + time + " - Vesi: " + waterTemp + " Õhk: " + airTemp + " Inimesi: "+ pop
-
-    def send_help(self, c, nick):
+    def getHelp(self, c, nick):
         help = """!quote [otsisõna] - väljastab suvalise otsisõna sisaldava tsitaadi
 !addquote [tsitaat] - lisab tsitaadi
-!quotestat [otsisõna] - väljastab otsisäna sisaldavate tsitaatide koguarvu
+!quotestat [otsisõna] - väljastab otsisõna sisaldavate tsitaatide koguarvu
 !seen [nick] - millal kasutaja viimati kanalis viibis
-!google [otsingufraas] - Google otsing
-!ilm [asukoht] - väljastab asukoha temperatuuri. Parameetrita käsk annab asukohaloendi
-!rand [rand] - väljastab rannainfot. Parameetrita käsk annab loendi
-!omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi
-!imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi
-!fml - Suvaline postitus saidilt fmylife.com
-!nom - Kokkuvõte tänastest Tartu restoranide päevapakkumistest"""
+"""
+        for i in PLUGINS.keys():
+            help = help + pluginloader.load(PLUGINS[i]).getInfo() + "\n"
         help = help.split('\n')
         for line in help:
             c.notice(nick, line)
 
-    def do_command(self, c, e, cmd, parameter):
+    def doCommand(self, c, e, cmd, parameter):
         nick = nm_to_n(e.source())
         channel = e.target()
         c = self.connection
@@ -510,33 +369,22 @@ class MarjuBot(SingleServerIRCBot):
         elif cmd == "quote":
             if (self.channels[channel].quoting):
                 pass
-                msg = self.get_quote(channel, parameter)
+                msg = self.getQuote(channel, parameter)
         elif cmd == "addquote":
             if (self.channels[channel].quoting):
-                self.add_quote(channel, parameter)
+                self.addquote(channel, parameter)
                 c.notice(nick, "Tsitaat lisatud")
         elif cmd == "quotestat":
             if (self.channels[channel].quoting):
                 pass
-                msg = self.quote_stat(channel, parameter)
-        elif cmd == "ilm":
-            msg = self.get_ilm(parameter)
-        elif cmd == "omx":
-            msg = self.get_omx(parameter)
-        elif cmd == "fml":
-            msg = self.get_fml()
-        elif cmd == "rand":
-            msg = self.get_rand(parameter)
-        elif cmd == "imdb":
-            msg = self.get_imdb(parameter)
+                msg = self.getQuotestat(channel, parameter)
         elif cmd == "seen":
-            msg = self.get_seen(channel, parameter)
-        elif cmd == "google":
-            msg = self.get_google(parameter)
+            msg = self.getSeen(channel, parameter)
         elif cmd == "h":
-            self.send_help(c, nick)
-        elif cmd == "nom":
-            msg = self.get_nom()
+            self.getHelp(c, nick)
+        elif cmd in PLUGINS:
+            msg = pluginloader.load(PLUGINS[cmd]).get(parameter, channel)
+
         if (msg and type(msg) is not list):
             c.privmsg(channel, msg)
             msg = "<" + c.get_nickname() + "> " + msg
