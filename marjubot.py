@@ -2,9 +2,9 @@
 # coding=utf-8
 
 from random import choice
-from time import strftime, localtime, time
+from time import time
 from ircbot import SingleServerIRCBot, Channel
-from irclib import nm_to_n, nm_to_uh, is_channel, parse_channel_modes
+from irclib import nm_to_n, is_channel, parse_channel_modes
 from datetime import datetime
 import re
 import json
@@ -14,7 +14,9 @@ import conf.config as config
 import logging
 import sys
 import traceback
+import threading
 import pluginloader
+from logger import Logger
 
 NICK = config.NICK
 PASSWORD = config.PASSWORD
@@ -32,6 +34,8 @@ class MarjuBot(SingleServerIRCBot):
         self.channelsDict = channels
         self.password = password
         self.botNick = nickname
+        self.channels = {}
+        self.logger = Logger(self.channels)
 
     def on_nicknameinuse(self, c, e):
         c.nick(c.get_nickname() + "_")
@@ -49,24 +53,16 @@ class MarjuBot(SingleServerIRCBot):
             channel.seen = self.channelsDict[ch]["seen"]
             self.channels[ch] = channel
             c.join(ch)
-
         c.privmsg("nickserv", "identify " + PASSWORD)
 
     def on_topic(self, c, e):
-        nick = nm_to_n(e.source())
-        topic = e.arguments()[0]
-        self.log(e.target(), "* " + nick + " changes topic to \'" + topic + "\'")
+        self.logger.logTopic(e)
 
     def on_currenttopic(self, c, e):
-        topic = e.arguments()[1]
-        channel = e.arguments()[0]
-        self.log(channel, "* Topic is \'" + topic + "\'")
+        self.logger.logCurrentTopic(e)
 
     def on_topicinfo(self, c, e):
-        channel = e.arguments()[0]
-        setter = e.arguments()[1]
-        time = strftime("%a %b %d %H:%M:%S %Y", localtime(float(e.arguments()[2])))
-        self.log(channel, "* Set by " + setter + " on " + time)
+        self.logger.logTopicInfo(e)
 
     def on_privmsg(self, c, e):
          nick = nm_to_n(e.source())
@@ -84,7 +80,7 @@ class MarjuBot(SingleServerIRCBot):
         if (len(command) > 1):
             parameter = command[1].rstrip('\n')
         command = command[0]
-        self.logPublicMessage(c, e)
+        self.logger.logPubMsg(e)
         if (len(command) > 1 and command[0] == "!"):
             self.doCommand(c, e, command[1:], parameter)
         else:
@@ -93,20 +89,16 @@ class MarjuBot(SingleServerIRCBot):
         return
 
     def on_pubnotice(self, c, e):
-        message = e.arguments()[0].strip()
-        channel = e.target()
-        nick = nm_to_n(e.source())
-        message = '-' + nick + ':' + channel + '- ' + message
-        self.log(channel, message)
+        self.logger.logPubNotice(e)
 
     def on_nick(self, c, e):
         before = nm_to_n(e.source())
         after = e.target()
-        for name, ch in self.channels.items():
-            if ch.has_user(before):
-                self.log(name, '* ' + before + ' is now known as ' + after)
-                self.doSeen(before, name, False)
-                self.doSeen(after, name, True)
+        for channelName, channel in self.channels.items():
+            if channel.has_user(before):
+                self.logger.logNick(channelName, before, after)
+                self.doSeen(before, channelName, False)
+                self.doSeen(after, channelName, True)
 
     def on_join(self, c, e):
         nick = nm_to_n(e.source())
@@ -120,82 +112,42 @@ class MarjuBot(SingleServerIRCBot):
                 newChannel.quoting = self.channelsDict[channel]["quoting"]
                 self.channels[channel] = newChannel
             self.channels[channel].add_user(nick)
-            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
-            self.logWithoutTime(e.target(), "\nSession Start: " + time)
-            self.logWithoutTime(e.target(), "Session Ident: " + channel)
-            self.log(e.target(), "* Now talking in " + channel)
+            self.logger.logSelfJoin(e, channel)
             return
         self.channels[channel].add_user(nick)
-        userHost = nm_to_uh(e.source())
-        self.log(channel, "* " + nick + " (" + userHost + ") has joined " + channel)
+        self.logger.logJoin(e)
         self.doSeen(nick, channel, True)
 
     def on_part(self, c, e):
-        channel = e.target()
-        userHost = nm_to_uh(e.source())
         nick = nm_to_n(e.source())
         if (nick == c.get_nickname()):
-            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
-            self.logWithoutTime(e, "Session Close: " + time)
+            self.logger.logSelfPart(e)
             return
-        self.log(e.target(), "* " + nick + " (" + userHost + ") has left " + channel)
+        self.logger.logPart(e)
+        channel = e.target()
         self.doSeen(nick, channel, False)
 
     def on_action(self, c, e):
-        nick = "<" + nm_to_n(e.source()) + "> "
-        msg = e.arguments()[0]
-        self.log(e.target(), "* " + nick + msg)
+        self.logger.logAction(e)
 
     def on_quit(self, c, e):
         nick = nm_to_n(e.source())
-        userHost = nm_to_uh(e.source())
-        for name, ch in self.channels.items():
-            if ch.has_user(nick):
-                self.log(name, "* " + nick + " (" + userHost + ") Quit")
-                self.doSeen(nick, name, False)
+        for channelName, channel in self.channels.items():
+            if channel.has_user(nick):
+                self.logger.logQuit(e, channelName)
+                self.doSeen(nick, channelName, False)
 
     def on_kick(self, c, e):
-        kicker = nm_to_n(e.source())
         kickee = e.arguments()[0]
         if (kickee == c.get_nickname()):
-            self.log(e.target(), "* You were kicked by " + kicker)
-            time = strftime("%a %b %d %H:%M:%S %Y", localtime())
-            self.logWithoutTime(e.target(), "Session Close: " + time)
+            self.logger.logSelfKick(e)
             return
-        self.log(e.target(), "* " + kickee + " was kicked by " + kicker)
+        self.logger.logKick(e)
         self.doSeen(kickee, e.target(), False)
 
     def on_mode(self, c, e):
         modes = parse_channel_modes(" ".join(e.arguments()))
-        nick = nm_to_n(e.source())
-        for mode in modes:
-            signedMode = mode[0] + mode[1]
-            if mode[2] is None:
-                mode[2] = ""
-            else:
-                mode[2] = " " + mode[2]
-            self.log(e.target(), "* " + nick + " sets mode " + signedMode + mode[2])
-
-    def logPublicMessage(self, c, e):
-        nick = '<' + nm_to_n(e.source()) + '>'
-        text =  ' ' + e.arguments()[0]
-        log = nick + text
-        self.log(e.target(), log)
-
-    def log(self, channel, msg):
-        if (not self.channels[channel].logging):
-            return
-        time = strftime("[%H:%M:%S] ", localtime())
-        folder = self.channels[channel].folder
-        with open(folder + "/log.txt", "a") as f:
-            f.write(time + msg + "\n")
-
-    def logWithoutTime(self, channel, msg):
-        if (not self.channels[channel].logging):
-            return
-        folder = self.channels[channel].folder
-        with open(folder + "/log.txt", "a") as f:
-            f.write(msg + "\n")
+        self.logger.logMode(e, modes)
 
     def doAI(self, c, e):
         channel = e.target()
@@ -245,7 +197,7 @@ class MarjuBot(SingleServerIRCBot):
                 continue
             title = response['data']['title'].encode("utf-8")
             c.privmsg(channel, title)
-            self.log(channel, "<" + c.get_nickname() + "> " + title)
+            self.logger.log(channel, "<" + c.get_nickname() + "> " + title)
 
     def doSeen(self, nick, channel, isJoin):
         unixTime = str(int(time()))
@@ -383,17 +335,25 @@ class MarjuBot(SingleServerIRCBot):
         elif cmd == "h":
             self.getHelp(c, nick)
         elif cmd in PLUGINS:
-            msg = pluginloader.load(PLUGINS[cmd]).get(parameter, channel)
+             threading.Thread(target=self.worker, args=(self.sendResponse, cmd, parameter, channel, c)).start()
+             return
 
+        self.sendResponse(msg, channel, c)
+
+    def worker(self, callback, cmd, parameter, channel, c):
+        msg = pluginloader.load(PLUGINS[cmd]).get(parameter, channel)
+        callback(msg, channel, c)
+
+    def sendResponse(self, msg, channel, c):
         if (msg and type(msg) is not list):
             c.privmsg(channel, msg)
             msg = "<" + c.get_nickname() + "> " + msg
-            self.log(channel, msg)
+            self.logger.log(channel, msg)
         elif (msg and type(msg) is list):
             for line in msg:
                 c.privmsg(channel, line)
                 line = "<" + c.get_nickname() + "> " + line
-                self.log(channel, line)
+                self.logger.log(channel, line)
 
 def log_uncaught_exceptions(ex_cls, ex, tb):
     if (ex_cls == KeyboardInterrupt):

@@ -14,9 +14,7 @@ Marju 2.0
 - Debugimiseks seada failis irclib.py lipu DEBUG väärtuseks 1
 
 +++TODO list+++
-- Varemlingitud URL'ide detectimine
+- Varemlingitud URL'ide detectimine (old!!!)
 - Youtube videode otsing
-- Päringud eraldi threadi, juhuks kui on timeout vms
-- Logimine viia eraldi muust loogikast
 - REFACTORDADA TÄIEGA
 - ????
