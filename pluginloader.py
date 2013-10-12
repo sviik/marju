@@ -13,7 +13,7 @@ def findAll():
         location = os.path.join(PluginFolder, i)
         if not os.path.isdir(location) or not MainModule + ".py" in os.listdir(location):
             continue
-        print("Loading plugin " + i)
+        #print("Loading plugin " + i)
         info = imp.find_module(MainModule, [location])
         plugins[i] = {"name": i, "info": info}
     return plugins

@@ -86,6 +86,7 @@ class MarjuBot(SingleServerIRCBot):
         else:
             self.doYoutube(c, e)
             self.doAI(c, e)
+            self.doImdb(c, e)
         return
 
     def on_pubnotice(self, c, e):
@@ -182,7 +183,7 @@ class MarjuBot(SingleServerIRCBot):
 
     def doYoutube(self, c, e):
         channel = e.target()
-        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].ai):
+        if (not is_channel(channel)):
             return
         msg = e.arguments()[0].strip()
         matches = re.findall(youtubeUrlRe, msg)
@@ -198,6 +199,41 @@ class MarjuBot(SingleServerIRCBot):
             title = response['data']['title'].encode("utf-8")
             c.privmsg(channel, title)
             self.logger.log(channel, "<" + c.get_nickname() + "> " + title)
+
+    def doImdb(self, c, e):
+        channel = e.target()
+        msg = e.arguments()[0].strip()
+
+        imdbUrlRe = re.compile('(imdb\.com/title/(?P<id>tt[0-9]{7}))')
+        matches = re.findall(imdbUrlRe, msg)
+        matches = list(set(matches))
+        if (not matches):
+            return
+        ids = ""
+
+        for match in matches:
+            ids = ids + match[1] + "%2C"
+        ids = ids[:-3]
+
+        url = "http://mymovieapi.com/?ids=" + ids + "&type=json&plot=simple&episode=1&lang=en-US&aka=simple&release=simple&business=0&tech=0"
+        result = urlopen(url).read()
+        movies = json.loads(result)
+
+        if ('error' in movies):
+            return
+
+        for movie in movies:
+            title = movie['title'].encode("utf-8")
+            year =  str(movie['year'])
+            rating = "[" + str(movie['rating']) + "] " if "rating" in movie else ""
+            plot =  "- " + movie['plot_simple'].encode("utf-8") if "plot_simple" in movie else ""
+            countries = ""
+            for country in movie['country']:
+                countries = countries + country.encode("utf-8") + "/"
+            countries = countries[:-1]
+            response = title + " (" + countries + " " + year + ") " + rating + plot
+            c.privmsg(channel, response)
+            self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
 
     def doSeen(self, nick, channel, isJoin):
         unixTime = str(int(time()))

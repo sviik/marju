@@ -9,7 +9,7 @@ def getInfo():
 
 def get(parameter, channel):
     title = parameter.replace(' ', '+')
-    url = "http://www.imdbapi.com/" + "?t=" + title
+    url = "http://www.imdbapi.com/" + "?t=" + title + "&plot=short"
     r = urlopen(url).read()
     response = json.loads(r)
     if (response['Response'] == "True"):
@@ -17,6 +17,9 @@ def get(parameter, channel):
         id = response["imdbID"].encode("utf-8")
         year = response["Year"].encode("utf-8")
         rating = response["imdbRating"].encode("utf-8")
-        return title + " (" + year + ") [" + rating + "] http://www.imdb.com/title/" + id + "/";
+        plot = response["Plot"].encode("utf-8")
+        if plot is not "":
+            plot = "- " + plot
+        return title + " (" + year + ") [" + rating + "] http://www.imdb.com/title/" + id + "/ " + plot;
     else:
         return "Ei leidnud seda filmi"
