@@ -17,6 +17,7 @@ marjutest["name"] = "#marjutest"
 marjutest["folder"] = "marjutest"
 marjutest["logging"] = True
 marjutest["ai"] = True
+marjutest["old"] = True
 marjutest["quoting"] = True
 marjutest["seen"] = True
 
@@ -25,6 +26,7 @@ mingikanal["name"] = "#minukanal"
 mingikanal["folder"] = "minukanal"
 mingikanal["logging"] = False
 mingikanal["ai"] = True
+marjutest["old"] = False
 mingikanal["quoting"] = True
 mingikanal["seen"] = False
 

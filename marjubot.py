@@ -8,6 +8,7 @@ from irclib import nm_to_n, is_channel, parse_channel_modes
 from datetime import datetime
 import re
 import json
+import fileinput
 from urllib import urlopen
 import random
 import conf.config as config
@@ -49,6 +50,7 @@ class MarjuBot(SingleServerIRCBot):
             channel.logging = self.channelsDict[ch]["logging"]
             channel.folder = self.channelsDict[ch]["folder"]
             channel.ai = self.channelsDict[ch]["ai"]
+            channel.old = self.channelsDict[ch]["old"]
             channel.quoting = self.channelsDict[ch]["quoting"]
             channel.seen = self.channelsDict[ch]["seen"]
             self.channels[ch] = channel
@@ -87,6 +89,7 @@ class MarjuBot(SingleServerIRCBot):
             self.doYoutube(c, e)
             self.doAI(c, e)
             self.doImdb(c, e)
+            self.doOld(c, e)
         return
 
     def on_pubnotice(self, c, e):
@@ -110,6 +113,7 @@ class MarjuBot(SingleServerIRCBot):
                 newChannel.logging = self.channelsDict[channel]["logging"]
                 newChannel.folder = self.channelsDict[channel]["folder"]
                 newChannel.ai = self.channelsDict[channel]["ai"]
+                newChannel.old = self.channelsDict[channel]["old"]
                 newChannel.quoting = self.channelsDict[channel]["quoting"]
                 self.channels[channel] = newChannel
             self.channels[channel].add_user(nick)
@@ -202,6 +206,8 @@ class MarjuBot(SingleServerIRCBot):
 
     def doImdb(self, c, e):
         channel = e.target()
+        if (not is_channel(channel)):
+            return
         msg = e.arguments()[0].strip()
 
         imdbUrlRe = re.compile('(imdb\.com/title/(?P<id>tt[0-9]{7}))')
@@ -234,6 +240,33 @@ class MarjuBot(SingleServerIRCBot):
             response = title + " (" + countries + " " + year + ") " + rating + plot
             c.privmsg(channel, response)
             self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
+
+    def doOld(self, c, e):
+        channel = e.target()
+        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].old ):
+            return
+        linkRe = re.compile('(http://www\.|https://www\.|http://|https://|www\.)(?P<link>\S+)')
+        msg = e.arguments()[0].strip()
+        links = re.findall(linkRe, msg)
+        if (not links):
+            return
+        folder = self.channels[channel].folder
+        for link in links:
+            found = False
+            for line in fileinput.input(folder + "/links.txt", inplace=1):
+                data = line.rstrip().split(":")
+                if (data[0] == link[1]):
+                    found = True
+                    count = int(data[1])
+                    response = "old x" + str(count) + "!!!"
+                    c.privmsg(channel, response)
+                    self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
+                    print(data[0] + ":" + str((count + 1)))
+                else:
+                     print(line.rstrip())
+            if (not found):
+                with open(folder + "/links.txt", "a") as f:
+                    f.write(link[1] + ":1\n")
 
     def doSeen(self, nick, channel, isJoin):
         unixTime = str(int(time()))
