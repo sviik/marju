@@ -27,7 +27,9 @@ OWNER_NICK = config.OWNER_NICK
 OWNER_PASS=config.OWNER_PASS
 PLUGINS = pluginloader.findAll()
 
+imdbUrlRe = re.compile('(imdb\.com/title/(?P<id>tt[0-9]{7}))')
 youtubeUrlRe = re.compile('(youtube\.com/watch\?v=|youtube\.com/watch\?.*&v=|youtu.be/)(?P<id>[A-Za-z0-9_-]{11})')
+linkRe = re.compile('(http://www\.|https://www\.|http://|https://|www\.)(?P<link>\S+)')
 
 class MarjuBot(SingleServerIRCBot):
     def __init__(self, channels, nickname, password, server, port=6667):
@@ -210,13 +212,12 @@ class MarjuBot(SingleServerIRCBot):
             return
         msg = e.arguments()[0].strip()
 
-        imdbUrlRe = re.compile('(imdb\.com/title/(?P<id>tt[0-9]{7}))')
         matches = re.findall(imdbUrlRe, msg)
-        matches = list(set(matches))
         if (not matches):
             return
-        ids = ""
+        matches = list(set(matches))
 
+        ids = ""
         for match in matches:
             ids = ids + match[1] + "%2C"
         ids = ids[:-3]
@@ -243,30 +244,36 @@ class MarjuBot(SingleServerIRCBot):
 
     def doOld(self, c, e):
         channel = e.target()
-        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].old ):
+        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].old):
             return
-        linkRe = re.compile('(http://www\.|https://www\.|http://|https://|www\.)(?P<link>\S+)')
         msg = e.arguments()[0].strip()
         links = re.findall(linkRe, msg)
         if (not links):
             return
         folder = self.channels[channel].folder
         for link in links:
+            url = link[1]
+            if ("4chan" in url):
+                continue
+            ytLinks = re.findall(youtubeUrlRe, url)
+            if (ytLinks):
+                url = ytLinks[0][0]
             found = False
             for line in fileinput.input(folder + "/links.txt", inplace=1):
-                data = line.rstrip().split(":")
-                if (data[0] == link[1]):
+                data = line.rstrip().split(" ")
+                if (data[0] == url):
                     found = True
                     count = int(data[1])
-                    response = "old x" + str(count) + "!!!"
+                    countStr = "(x" + str(count) + ")" if count > 1 else ""
+                    response = "old!!! " + countStr
                     c.privmsg(channel, response)
                     self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
-                    print(data[0] + ":" + str((count + 1)))
+                    print(data[0] + " " + str((count + 1)))
                 else:
                      print(line.rstrip())
             if (not found):
                 with open(folder + "/links.txt", "a") as f:
-                    f.write(link[1] + ":1\n")
+                    f.write(url + " 1\n")
 
     def doSeen(self, nick, channel, isJoin):
         unixTime = str(int(time()))
@@ -292,11 +299,9 @@ class MarjuBot(SingleServerIRCBot):
             f.write(line)
         if (not nickFound):
             if (isJoin):
-                newLine = nick + ":" + unixTime + ":" + "\n"
-                f.write(newLine)
+                f.write(nick + ":" + unixTime + ":" + "\n")
             else:
-                newLine = nick + "::" + unixTime + "\n"
-                f.write(newLine)
+                f.write(nick + "::" + unixTime + "\n")
         f.close()
 
     def getQuote(self, channel, parameter):
