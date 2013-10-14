@@ -253,11 +253,13 @@ class MarjuBot(SingleServerIRCBot):
         folder = self.channels[channel].folder
         for link in links:
             url = link[1]
+            if url[-1:] == "/":
+                url = url[:-1]
             if ("4chan" in url):
                 continue
             ytLinks = re.findall(youtubeUrlRe, url)
             if (ytLinks):
-                url = ytLinks[0][0]
+                url = ytLinks[0][1]
             found = False
             for line in fileinput.input(folder + "/links.txt", inplace=1):
                 data = line.rstrip().split(" ")
@@ -265,15 +267,17 @@ class MarjuBot(SingleServerIRCBot):
                     found = True
                     count = int(data[1])
                     countStr = "(x" + str(count) + ")" if count > 1 else ""
-                    response = "old!!! " + countStr
+                    nick = "<" + data[2] + ">"
+                    firstTime = datetime.fromtimestamp(int(data[3])).strftime("%d/%m/%Y %H:%M:%S")
+                    response = "old!!! " + countStr + " Algselt linkis " + nick + " " + firstTime
                     c.privmsg(channel, response)
                     self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
-                    print(data[0] + " " + str((count + 1)))
+                    print(data[0] + " " + str(count + 1) + " " + data[2] + " " + data[3])
                 else:
                      print(line.rstrip())
             if (not found):
                 with open(folder + "/links.txt", "a") as f:
-                    f.write(url + " 1\n")
+                    f.write(url + " 1 " + nm_to_n(e.source()) + " " + str(int(time())) + "\n")
 
     def doSeen(self, nick, channel, isJoin):
         unixTime = str(int(time()))
