@@ -223,22 +223,26 @@ class MarjuBot(SingleServerIRCBot):
         ids = ids[:-3]
 
         url = "http://mymovieapi.com/?ids=" + ids + "&type=json&plot=simple&episode=1&lang=en-US&aka=simple&release=simple&business=0&tech=0"
+
         result = urlopen(url).read()
-        movies = json.loads(result)
+        try:
+            movies = json.loads(result)
+        except ValueError:
+            return
 
         if ('error' in movies):
             return
 
         for movie in movies:
             title = movie['title'].encode("utf-8")
-            year =  str(movie['year'])
+            year =  " " + str(movie['year']) if "year" in movie else ""
             rating = "[" + str(movie['rating']) + "] " if "rating" in movie else ""
             plot =  "- " + movie['plot_simple'].encode("utf-8") if "plot_simple" in movie else ""
             countries = ""
             for country in movie['country']:
                 countries = countries + country.encode("utf-8") + "/"
             countries = countries[:-1]
-            response = title + " (" + countries + " " + year + ") " + rating + plot
+            response = title + " (" + countries + year + ") " + rating + plot
             c.privmsg(channel, response)
             self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
 
