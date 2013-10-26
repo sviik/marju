@@ -4,16 +4,22 @@
 import imp
 import os
 
-PluginFolder = "./plugins"
+CommandPluginFolder = "./plugin/command"
+InterceptorPluginFolder = "./plugin/interceptor"
 MainModule = "__init__"
 
-def findAll():
+def findAllCommandPlugins():
+    return findAllPlugins(CommandPluginFolder)
+
+def findAllInterceptorPlugins():
+    return findAllPlugins(InterceptorPluginFolder)
+
+def findAllPlugins(folder):
     plugins = {}
-    for i in os.listdir(PluginFolder):
-        location = os.path.join(PluginFolder, i)
+    for i in os.listdir(folder):
+        location = os.path.join(folder, i)
         if not os.path.isdir(location) or not MainModule + ".py" in os.listdir(location):
             continue
-        #print("Loading plugin " + i)
         info = imp.find_module(MainModule, [location])
         plugins[i] = {"name": i, "info": info}
     return plugins

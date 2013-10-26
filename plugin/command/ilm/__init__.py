@@ -10,7 +10,7 @@ tartuIlmRe = re.compile('Temperatuur</A></TD><TD align="left" width="45%"><B>(?P
 def getInfo():
     return "!ilm [asukoht] - väljastab asukoha temperatuuri. Parameetrita käsk annab asukohaloendi"
 
-def get(parameter, channel):
+def get(parameter, folder):
     linn = parameter.title()
     if (linn == 'Tar' or linn == 'Tart' or linn == 'Tartu'):
         return get_tartu_ilm()

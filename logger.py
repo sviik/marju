@@ -17,6 +17,10 @@ class Logger():
         with open(folder + "/log.txt", "a") as f:
             f.write(time + msg + "\n")
 
+    def logSelfMsg(self, c, channel, msg):
+        msg = "<" + c.get_nickname() + "> " + msg
+        self.log(channel, msg)
+
     def logWithoutTime(self, channel, msg):
         if (not self.channels[channel].logging):
             return

@@ -1,14 +1,12 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
-from random import choice
 from time import time
 from ircbot import SingleServerIRCBot, Channel
 from irclib import nm_to_n, is_channel, parse_channel_modes
 from datetime import datetime
 import re
 import json
-import fileinput
 from urllib import urlopen
 import random
 import conf.config as config
@@ -25,11 +23,8 @@ SERVER = config.SERVER
 PORT = config.PORT
 OWNER_NICK = config.OWNER_NICK
 OWNER_PASS=config.OWNER_PASS
-PLUGINS = pluginloader.findAll()
-
-imdbUrlRe = re.compile('(imdb\.com/title/(?P<id>tt[0-9]{7}))')
-youtubeUrlRe = re.compile('(youtube\.com/watch\?v=|youtube\.com/watch\?.*&v=|youtu.be/)(?P<id>[A-Za-z0-9_-]{11})')
-linkRe = re.compile('(http://www\.|https://www\.|http://|https://|www\.)(?P<link>\S+)')
+COMMAND_PLUGINS = pluginloader.findAllCommandPlugins()
+INTERCEPTOR_PLUGINS = pluginloader.findAllInterceptorPlugins()
 
 class MarjuBot(SingleServerIRCBot):
     def __init__(self, channels, nickname, password, server, port=6667):
@@ -77,22 +72,6 @@ class MarjuBot(SingleServerIRCBot):
              return
          cmd = command[1]
          c.send_raw(cmd)
-
-    def on_pubmsg(self, c, e):
-        command = e.arguments()[0].split(" ",1)
-        parameter = ""
-        if (len(command) > 1):
-            parameter = command[1].rstrip('\n')
-        command = command[0]
-        self.logger.logPubMsg(e)
-        if (len(command) > 1 and command[0] == "!"):
-            self.doCommand(c, e, command[1:], parameter)
-        else:
-            self.doYoutube(c, e)
-            self.doAI(c, e)
-            self.doImdb(c, e)
-            self.doOld(c, e)
-        return
 
     def on_pubnotice(self, c, e):
         self.logger.logPubNotice(e)
@@ -156,174 +135,123 @@ class MarjuBot(SingleServerIRCBot):
         modes = parse_channel_modes(" ".join(e.arguments()))
         self.logger.logMode(e, modes)
 
-    def doAI(self, c, e):
-        channel = e.target()
-        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].ai):
+    def on_pubmsg(self, c, e):
+        self.logger.logPubMsg(e)
+        if (self.parseAndDoCommand(c, e)):
             return
+        self.doInterceptors(c, e)
 
-        #save random message to AI vocabulary
-        msg = e.arguments()[0].strip()
-        if (random.random() < 0.1):
-           self.saveVoc(msg, channel)
+    def parseAndDoCommand(self, c, e):
+        command = e.arguments()[0].split(" ",1)
+        parameter = ""
+        if (len(command) > 1):
+            parameter = command[1].rstrip('\n')
+        command = command[0]
+        if (len(command) > 1 and command[0] == "!"):
+            self.doCommand(c, e, command[1:], parameter)
+            return True
+        return False
 
-        #answer if bot's nick is mentioned
-        if (c.get_nickname().lower() in msg.lower()):
-            if (random.random() < 0.6):
-                out = self.getVoc(channel)
-                c.privmsg(channel, out)
-                msg = "<" + c.get_nickname() + "> " + msg
+    def doCommand(self, c, e, cmd, parameter):
+        nick = nm_to_n(e.source())
+        channel = e.target()
+        c = self.connection
+        msg = ""
+        if cmd == "disconnect":
+            pass
+            #self.disconnect()
+        elif cmd == "die":
+            pass
+            #self.die()
+        elif cmd == "seen" and self.isCommandAllowedForChannel(cmd, channel):
+            msg = self.getSeen(channel, parameter)
+        elif cmd == "h":
+            self.getHelp(c, nick)
+        elif cmd in COMMAND_PLUGINS and self.isCommandAllowedForChannel(cmd, channel):
+             threading.Thread(target=self.commandWorker, args=(self.sendResponse, cmd, parameter, channel, c)).start()
+             return
 
-    def getVoc(self, channel):
-        folder = self.channels[channel].folder
-        file = open(folder + "/sonavara.txt")
-        line = next(file)
-        for num, aline in enumerate(file):
-            if random.randrange(num + 2): continue
-            line = aline
-        return line
+        self.sendResponse(msg, channel, c)
 
-    def saveVoc(self, msg, channel):
-        folder = self.channels[channel].folder
-        with open(folder + "/sonavara.txt", "a") as f:
-            f.write(msg + "\n")
+    def isCommandAllowedForChannel(self, cmd, channel):
+        if (cmd in ["quote", "addquote", "quotestat"] and not self.channels[channel].quoting):
+            return False
+        if (cmd == "seen" and not self.channels[channel].seen):
+            return False
+        return True
 
-    def doYoutube(self, c, e):
+    def commandWorker(self, callback, cmd, parameter, channel, c):
+        msg = pluginloader.load(COMMAND_PLUGINS[cmd]).get(parameter, self.channels[channel].folder)
+        callback(msg, channel, c)
+
+    def sendResponse(self, msg, channel, c):
+        if (msg and type(msg) is not list):
+            c.privmsg(channel, msg)
+            msg = "<" + c.get_nickname() + "> " + msg
+            self.logger.log(channel, msg)
+        elif (msg and type(msg) is list):
+            for line in msg:
+                c.privmsg(channel, line)
+                line = "<" + c.get_nickname() + "> " + line
+                self.logger.log(channel, line)
+
+    def doInterceptors(self, c, e):
         channel = e.target()
         if (not is_channel(channel)):
             return
         msg = e.arguments()[0].strip()
-        matches = re.findall(youtubeUrlRe, msg)
-        if (not matches):
+        author = nm_to_n(e.source())
+        for interceptor in INTERCEPTOR_PLUGINS:
+            if (self.isInterceptorAllowedForChannel(interceptor, channel)):
+                threading.Thread(target=self.interceptorWorker, args=(interceptor, msg, channel, author, c)).start()
+
+    def isInterceptorAllowedForChannel(self, interceptor, channel):
+        if (interceptor == "old" and not self.channels[channel].old):
+            return False
+        if (interceptor == "ai" and not self.channels[channel].ai):
+            return False
+        return True
+
+    def interceptorWorker(self, interceptor, msg, channel, author, c):
+        response = pluginloader.load(INTERCEPTOR_PLUGINS[interceptor]).do(msg, author, self.channels[channel].folder)
+        if (response == None):
             return
-        for match in matches:
-            id = match[1]
-            url = 'http://gdata.youtube.com/feeds/api/videos/' + id + '?v=2&alt=jsonc'
-            result = urlopen(url).read()
-            response = json.loads(result)
-            if ('error' in response):
-                continue
-            title = response['data']['title'].encode("utf-8")
-            c.privmsg(channel, title)
-            self.logger.log(channel, "<" + c.get_nickname() + "> " + title)
-
-    def doImdb(self, c, e):
-        channel = e.target()
-        if (not is_channel(channel)):
-            return
-        msg = e.arguments()[0].strip()
-
-        matches = re.findall(imdbUrlRe, msg)
-        if (not matches):
-            return
-        matches = list(set(matches))
-
-        ids = ""
-        for match in matches:
-            ids = ids + match[1] + "%2C"
-        ids = ids[:-3]
-
-        url = "http://mymovieapi.com/?ids=" + ids + "&type=json&plot=simple&episode=1&lang=en-US&aka=simple&release=simple&business=0&tech=0"
-
-        result = urlopen(url).read()
-        try:
-            movies = json.loads(result)
-        except ValueError:
-            return
-
-        if ('error' in movies):
-            return
-
-        for movie in movies:
-            title = movie['title'].encode("utf-8")
-            year =  " " + str(movie['year']) if "year" in movie else ""
-            rating = "[" + str(movie['rating']) + "] " if "rating" in movie else ""
-            plot =  "- " + movie['plot_simple'].encode("utf-8") if "plot_simple" in movie else ""
-            countries = ""
-            for country in movie['country']:
-                countries = countries + country.encode("utf-8") + "/"
-            countries = countries[:-1]
-            response = title + " (" + countries + year + ") " + rating + plot
+        if (type(response) is not list):
             c.privmsg(channel, response)
-            self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
-
-    def doOld(self, c, e):
-        channel = e.target()
-        if (not is_channel(channel) or is_channel(channel) and not self.channels[channel].old):
-            return
-        msg = e.arguments()[0].strip()
-        links = re.findall(linkRe, msg)
-        if (not links):
-            return
-        folder = self.channels[channel].folder
-        for link in links:
-            url = link[1]
-            if url[-1:] == "/":
-                url = url[:-1]
-            if ("4chan" in url):
-                continue
-            ytLinks = re.findall(youtubeUrlRe, url)
-            if (ytLinks):
-                url = ytLinks[0][1]
-            found = False
-            for line in fileinput.input(folder + "/links.txt", inplace=1):
-                data = line.rstrip().split(" ")
-                if (data[0] == url):
-                    found = True
-                    count = int(data[1])
-                    countStr = "(x" + str(count) + ")" if count > 1 else ""
-                    nick = "<" + data[2] + ">"
-                    firstTime = datetime.fromtimestamp(int(data[3])).strftime("%d/%m/%Y %H:%M:%S")
-                    response = "old!!! " + countStr + " Algselt linkis " + nick + " " + firstTime
-                    c.privmsg(channel, response)
-                    self.logger.log(channel, "<" + c.get_nickname() + "> " + response)
-                    print(data[0] + " " + str(count + 1) + " " + data[2] + " " + data[3])
-                else:
-                     print(line.rstrip())
-            if (not found):
-                with open(folder + "/links.txt", "a") as f:
-                    f.write(url + " 1 " + nm_to_n(e.source()) + " " + str(int(time())) + "\n")
+            self.logger.logSelfMsg(c, channel, response)
+        else:
+            for line in response:
+                c.privmsg(channel, line)
+                self.logger.logSelfMsg(c, channel, line)
 
     def doSeen(self, nick, channel, isJoin):
-        unixTime = str(int(time()))
-        folder = self.channels[channel].folder
-        f = open(folder + "/seen.txt","r")
-        lines = f.readlines()
-        f.close()
-        nickFound = False
-        for index, line in enumerate(lines):
-            if (line.split(":")[0] == nick):
-                newLine = ""
-                nickFound = True
-                if (isJoin):
-                    newLine = nick + ":" + unixTime + ":"
-                else:
-                    newLine = line.split(":")
-                    newLine[2] = unixTime
-                    newLine = ":".join(newLine)
-                lines[index] = newLine + "\n"
-                break
-        f = open(folder + "/seen.txt","w")
-        for line in lines:
-            f.write(line)
-        if (not nickFound):
-            if (isJoin):
-                f.write(nick + ":" + unixTime + ":" + "\n")
-            else:
-                f.write(nick + "::" + unixTime + "\n")
-        f.close()
-
-    def getQuote(self, channel, parameter):
-        folder = self.channels[channel].folder
-        file = open(folder + "/tsitaadid.txt")
-        matches = []
-        for line in file:
-            if parameter.lower() in line.lower():
-                matches.append(line)
-        if (len(matches) > 0):
-            file.close()
-            return choice(matches).strip()
-        file.close()
-        return None
+         unixTime = str(int(time()))
+         folder = self.channels[channel].folder
+         f = open(folder + "/seen.txt","r")
+         lines = f.readlines()
+         f.close()
+         nickFound = False
+         for index, line in enumerate(lines):
+             if (line.split(":")[0] == nick):
+                 newLine = ""
+                 nickFound = True
+                 if (isJoin):
+                     newLine = nick + ":" + unixTime + ":"
+                 else:
+                     newLine = line.split(":")
+                     newLine[2] = unixTime
+                     newLine = ":".join(newLine)
+                 lines[index] = newLine + "\n"
+                 break
+         f = open(folder + "/seen.txt","w")
+         for line in lines:
+             f.write(line)
+         if (not nickFound):
+             if (isJoin):
+                 f.write(nick + ":" + unixTime + ":" + "\n")
+             else:
+                 f.write(nick + "::" + unixTime + "\n")
+         f.close()
 
     def getSeen(self, channel, parameter):
         if (not self.channels[channel].seen):
@@ -360,82 +288,13 @@ class MarjuBot(SingleServerIRCBot):
             return result
         return "Kasutajat " + parameter + " ei leitud."
 
-    def addquote(self, channel, parameter):
-        folder = self.channels[channel].folder
-        with open(folder + "/tsitaadid.txt", "a") as f:
-            f.write(parameter + "\n")
-
-    def getQuotestat(self, channel, parameter):
-        folder = self.channels[channel].folder
-        if (not parameter):
-            count = sum(1 for line in open(folder + '/tsitaadid.txt'))
-            return "Kokku on " + str(count) + " tsitaati."
-        count = 0
-        file = open(folder + "/tsitaadid.txt")
-        for line in file:
-            if parameter.lower() in line.lower():
-                count += 1
-        return 'Sõna "' + parameter + '" kohta on ' + str(count) + " tsitaati."
-
     def getHelp(self, c, nick):
-        help = """!quote [otsisõna] - väljastab suvalise otsisõna sisaldava tsitaadi
-!addquote [tsitaat] - lisab tsitaadi
-!quotestat [otsisõna] - väljastab otsisõna sisaldavate tsitaatide koguarvu
-!seen [nick] - millal kasutaja viimati kanalis viibis
-"""
-        for i in PLUGINS.keys():
-            help = help + pluginloader.load(PLUGINS[i]).getInfo() + "\n"
-        help = help.split('\n')
+        help = []
+        help.append("!seen [nick] - millal kasutaja viimati kanalis viibis")
+        for i in COMMAND_PLUGINS.keys():
+            help.append(pluginloader.load(COMMAND_PLUGINS[i]).getInfo())
         for line in help:
             c.notice(nick, line)
-
-    def doCommand(self, c, e, cmd, parameter):
-        nick = nm_to_n(e.source())
-        channel = e.target()
-        c = self.connection
-        msg = ""
-        if cmd == "disconnect":
-            pass
-            #self.disconnect()
-        elif cmd == "die":
-            pass
-            #self.die()
-        elif cmd == "quote":
-            if (self.channels[channel].quoting):
-                pass
-                msg = self.getQuote(channel, parameter)
-        elif cmd == "addquote":
-            if (self.channels[channel].quoting):
-                self.addquote(channel, parameter)
-                c.notice(nick, "Tsitaat lisatud")
-        elif cmd == "quotestat":
-            if (self.channels[channel].quoting):
-                pass
-                msg = self.getQuotestat(channel, parameter)
-        elif cmd == "seen":
-            msg = self.getSeen(channel, parameter)
-        elif cmd == "h":
-            self.getHelp(c, nick)
-        elif cmd in PLUGINS:
-             threading.Thread(target=self.worker, args=(self.sendResponse, cmd, parameter, channel, c)).start()
-             return
-
-        self.sendResponse(msg, channel, c)
-
-    def worker(self, callback, cmd, parameter, channel, c):
-        msg = pluginloader.load(PLUGINS[cmd]).get(parameter, channel)
-        callback(msg, channel, c)
-
-    def sendResponse(self, msg, channel, c):
-        if (msg and type(msg) is not list):
-            c.privmsg(channel, msg)
-            msg = "<" + c.get_nickname() + "> " + msg
-            self.logger.log(channel, msg)
-        elif (msg and type(msg) is list):
-            for line in msg:
-                c.privmsg(channel, line)
-                line = "<" + c.get_nickname() + "> " + line
-                self.logger.log(channel, line)
 
 def log_uncaught_exceptions(ex_cls, ex, tb):
     if (ex_cls == KeyboardInterrupt):

@@ -8,7 +8,7 @@ from xml.dom.minidom import parseString
 def getInfo():
     return "!fml - Suvaline postitus saidilt fmylife.com"
 
-def get(parameter, channel):
+def get(parameter, folder):
     url = "http://api.fmylife.com/view/random/?key=" + config.FML_KEY + "&language=en"
     content = urlopen(url).read()
     dom = parseString(content)

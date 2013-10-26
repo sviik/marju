@@ -5,10 +5,10 @@ from urllib import urlopen
 import json
 import conf.config as config
 
-def get_info():
+def getInfo():
     return "!google [otsingufraas] - Google otsing"
 
-def get(parameter, channel):
+def get(parameter, folder):
         url = 'https://www.googleapis.com/customsearch/v1'
         key = config.GOOGLE_KEY
         cx = config.GOOGLE_CX
