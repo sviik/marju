@@ -1,6 +1,9 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
+def getResponseType():
+    return "NOTICE"
+
 def getInfo():
     return "!addquote [tsitaat] - lisab tsitaadi"
 

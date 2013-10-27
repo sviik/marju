@@ -7,6 +7,9 @@ import re
 
 tartuIlmRe = re.compile('Temperatuur</A></TD><TD align="left" width="45%"><B>(?P<value>.*?) &deg;C</B>')
 
+def getResponseType():
+    return "MSG"
+
 def getInfo():
     return "!ilm [asukoht] - väljastab asukoha temperatuuri. Parameetrita käsk annab asukohaloendi"
 

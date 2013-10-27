@@ -7,6 +7,9 @@ from xml.dom.minidom import parseString
 def getInfo():
     return "!rand [rand] - väljastab rannainfot. Parameetrita käsk annab loendi"
 
+def getResponseType():
+    return "MSG"
+
 def get(parameter, folder):
     return "Info olemas ainult rannahooajal"
     url = "http://www.g4s.ee/beaches2.php"

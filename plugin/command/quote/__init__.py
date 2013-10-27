@@ -6,6 +6,9 @@ from random import choice
 def getInfo():
     return "!quote [otsisõna] - väljastab suvalise otsisõna sisaldava tsitaadi"
 
+def getResponseType():
+    return "MSG"
+
 def get(parameter, folder):
     file = open(folder + "/tsitaadid.txt")
     matches = []

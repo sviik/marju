@@ -4,6 +4,9 @@
 def getInfo():
     return "!quotestat [otsisõna] - väljastab otsisõna sisaldavate tsitaatide koguarvu"
 
+def getResponseType():
+    return "MSG"
+
 def get(parameter, folder):
     if (not parameter):
         count = sum(1 for line in open(folder + '/tsitaadid.txt'))

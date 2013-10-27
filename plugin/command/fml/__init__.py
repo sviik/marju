@@ -5,6 +5,9 @@ import conf.config as config
 from urllib import urlopen
 from xml.dom.minidom import parseString
 
+def getResponseType():
+    return "MSG"
+
 def getInfo():
     return "!fml - Suvaline postitus saidilt fmylife.com"
 

@@ -4,7 +4,10 @@
 import random
 from marjubot import NICK
 
-def do(msg, author, folder):
+def getResponseType():
+    return "MSG"
+
+def get(msg, author, folder):
     #save random message to AI vocabulary
     if (random.random() < 0.1):
        saveVoc(msg, folder)
@@ -13,7 +16,7 @@ def do(msg, author, folder):
     #answer if bot's nick is mentioned
     if (NICK.lower() in msg.lower()):
         if (random.random() < 0.6):
-            response.append(getVoc(folder))
+             response.append(getVoc(folder))
     return response
 
 def getVoc(folder):

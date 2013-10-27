@@ -137,25 +137,24 @@ class MarjuBot(SingleServerIRCBot):
 
     def on_pubmsg(self, c, e):
         self.logger.logPubMsg(e)
-        if (self.parseAndDoCommand(c, e)):
+        if (self.parseAndDoCommand(e)):
             return
-        self.doInterceptors(c, e)
+        self.doInterceptors(e)
 
-    def parseAndDoCommand(self, c, e):
+    def parseAndDoCommand(self, e):
         command = e.arguments()[0].split(" ",1)
         parameter = ""
         if (len(command) > 1):
             parameter = command[1].rstrip('\n')
         command = command[0]
         if (len(command) > 1 and command[0] == "!"):
-            self.doCommand(c, e, command[1:], parameter)
+            self.doCommand(e, command[1:], parameter)
             return True
         return False
 
-    def doCommand(self, c, e, cmd, parameter):
-        nick = nm_to_n(e.source())
+    def doCommand(self, e, cmd, parameter):
+        author = nm_to_n(e.source())
         channel = e.target()
-        c = self.connection
         msg = ""
         if cmd == "disconnect":
             pass
@@ -165,13 +164,10 @@ class MarjuBot(SingleServerIRCBot):
             #self.die()
         elif cmd == "seen" and self.isCommandAllowedForChannel(cmd, channel):
             msg = self.getSeen(channel, parameter)
-        elif cmd == "h":
-            self.getHelp(c, nick)
         elif cmd in COMMAND_PLUGINS and self.isCommandAllowedForChannel(cmd, channel):
-             threading.Thread(target=self.commandWorker, args=(self.sendResponse, cmd, parameter, channel, c)).start()
+             threading.Thread(target=self.commandWorker, args=(cmd, parameter, channel, author)).start()
              return
-
-        self.sendResponse(msg, channel, c)
+        self.sendResponse(msg, channel)
 
     def isCommandAllowedForChannel(self, cmd, channel):
         if (cmd in ["quote", "addquote", "quotestat"] and not self.channels[channel].quoting):
@@ -180,22 +176,27 @@ class MarjuBot(SingleServerIRCBot):
             return False
         return True
 
-    def commandWorker(self, callback, cmd, parameter, channel, c):
-        msg = pluginloader.load(COMMAND_PLUGINS[cmd]).get(parameter, self.channels[channel].folder)
-        callback(msg, channel, c)
+    def commandWorker(self, cmd, parameter, channel, author):
+        plugin = pluginloader.load(COMMAND_PLUGINS[cmd])
+        responseType = plugin.getResponseType()
+        response = plugin.get(parameter, self.channels[channel].folder)
+        self.sendResponse(response, responseType, channel, author)
 
-    def sendResponse(self, msg, channel, c):
-        if (msg and type(msg) is not list):
-            c.privmsg(channel, msg)
-            msg = "<" + c.get_nickname() + "> " + msg
-            self.logger.log(channel, msg)
-        elif (msg and type(msg) is list):
-            for line in msg:
+    def sendResponse(self, response, responseType, channel, author):
+        if not response:
+            return
+        c = self.connection
+        if (type(response) is not list):
+            response = [response]
+        for line in response:
+            if (responseType == "NOTICE"):
+                c.notice(author, line)
+            elif (responseType == "MSG"):
                 c.privmsg(channel, line)
                 line = "<" + c.get_nickname() + "> " + line
                 self.logger.log(channel, line)
 
-    def doInterceptors(self, c, e):
+    def doInterceptors(self, e):
         channel = e.target()
         if (not is_channel(channel)):
             return
@@ -203,7 +204,7 @@ class MarjuBot(SingleServerIRCBot):
         author = nm_to_n(e.source())
         for interceptor in INTERCEPTOR_PLUGINS:
             if (self.isInterceptorAllowedForChannel(interceptor, channel)):
-                threading.Thread(target=self.interceptorWorker, args=(interceptor, msg, channel, author, c)).start()
+                threading.Thread(target=self.interceptorWorker, args=(interceptor, msg, channel, author)).start()
 
     def isInterceptorAllowedForChannel(self, interceptor, channel):
         if (interceptor == "old" and not self.channels[channel].old):
@@ -212,17 +213,11 @@ class MarjuBot(SingleServerIRCBot):
             return False
         return True
 
-    def interceptorWorker(self, interceptor, msg, channel, author, c):
-        response = pluginloader.load(INTERCEPTOR_PLUGINS[interceptor]).do(msg, author, self.channels[channel].folder)
-        if (response == None):
-            return
-        if (type(response) is not list):
-            c.privmsg(channel, response)
-            self.logger.logSelfMsg(c, channel, response)
-        else:
-            for line in response:
-                c.privmsg(channel, line)
-                self.logger.logSelfMsg(c, channel, line)
+    def interceptorWorker(self, interceptor, msg, channel, author):
+        plugin = pluginloader.load(INTERCEPTOR_PLUGINS[interceptor])
+        responseType = plugin.getResponseType()
+        response = plugin.get(msg, author, self.channels[channel].folder)
+        self.sendResponse(response, responseType, channel, author)
 
     def doSeen(self, nick, channel, isJoin):
          unixTime = str(int(time()))
@@ -287,14 +282,6 @@ class MarjuBot(SingleServerIRCBot):
         if (result):
             return result
         return "Kasutajat " + parameter + " ei leitud."
-
-    def getHelp(self, c, nick):
-        help = []
-        help.append("!seen [nick] - millal kasutaja viimati kanalis viibis")
-        for i in COMMAND_PLUGINS.keys():
-            help.append(pluginloader.load(COMMAND_PLUGINS[i]).getInfo())
-        for line in help:
-            c.notice(nick, line)
 
 def log_uncaught_exceptions(ex_cls, ex, tb):
     if (ex_cls == KeyboardInterrupt):

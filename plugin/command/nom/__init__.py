@@ -11,6 +11,9 @@ noirArticleRe = re.compile('<div class="content-texts-wrapper.+?<h1>(.+?)<span.+
 def getInfo():
     return "!nom - Kokkuvõte tänastest Tartu restoranide päevapakkumistest"
 
+def getResponseType():
+    return "MSG"
+
 def get(parameter, folder):
     result = []
     link = re.search(noirRe, urlopen("http://www.cafenoir.ee").read())

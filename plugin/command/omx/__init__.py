@@ -7,6 +7,9 @@ import urllib2
 def getInfo():
     return "!omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi"
 
+def getResponseType():
+    return "MSG"
+
 def get(parameter, folder):
     if parameter is None or parameter is "":
         return

@@ -7,7 +7,10 @@ import json
 
 youtubeUrlRe = re.compile('(youtube\.com/watch\?v=|youtube\.com/watch\?.*&v=|youtu.be/)(?P<id>[A-Za-z0-9_-]{11})')
 
-def do(msg, author, folder):
+def getResponseType():
+    return "MSG"
+
+def get(msg, author, folder):
     matches = re.findall(youtubeUrlRe, msg)
     if (not matches):
         return

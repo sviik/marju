@@ -9,7 +9,10 @@ from datetime import datetime
 urlRe = re.compile('(http://www\.|https://www\.|http://|https://|www\.)(?P<link>\S+)')
 youtubeUrlRe = re.compile('(youtube\.com/watch\?v=|youtube\.com/watch\?.*&v=|youtu.be/)(?P<id>[A-Za-z0-9_-]{11})')
 
-def do(msg, author, folder):
+def getResponseType():
+    return "MSG"
+
+def get(msg, author, folder):
     urls = re.findall(urlRe, msg)
     if (not urls):
         return

@@ -7,6 +7,9 @@ from urllib import urlopen
 def getInfo():
     return "!imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi"
 
+def getResponseType():
+    return "MSG"
+
 def get(parameter, folder):
     title = parameter.replace(' ', '+')
     url = "http://www.imdbapi.com/" + "?t=" + title + "&plot=short"

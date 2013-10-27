@@ -7,7 +7,10 @@ import json
 
 imdbUrlRe = re.compile('(imdb\.com/title/(?P<id>tt[0-9]{7}))')
 
-def do(msg, author, folder):
+def getResponseType():
+    return "MSG"
+
+def get(msg, author, folder):
     matches = re.findall(imdbUrlRe, msg)
     if (not matches):
         return
