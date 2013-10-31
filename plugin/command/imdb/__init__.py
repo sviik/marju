@@ -10,7 +10,7 @@ def getInfo():
 def getResponseType():
     return "MSG"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     title = parameter.replace(' ', '+')
     url = "http://www.imdbapi.com/" + "?t=" + title + "&plot=short"
     r = urlopen(url).read()

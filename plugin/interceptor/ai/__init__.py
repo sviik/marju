@@ -12,11 +12,11 @@ def get(msg, author, folder):
     if (random.random() < 0.1):
        saveVoc(msg, folder)
 
-    response = []
+    response = None
     #answer if bot's nick is mentioned
     if (NICK.lower() in msg.lower()):
         if (random.random() < 0.6):
-             response.append(getVoc(folder))
+             response = getVoc(folder)
     return response
 
 def getVoc(folder):

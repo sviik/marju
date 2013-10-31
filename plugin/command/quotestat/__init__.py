@@ -7,7 +7,7 @@ def getInfo():
 def getResponseType():
     return "MSG"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     if (not parameter):
         count = sum(1 for line in open(folder + '/tsitaadid.txt'))
         return "Kokku on " + str(count) + " tsitaati."

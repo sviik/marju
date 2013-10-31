@@ -1,16 +1,24 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
-from urllib import urlopen
+from urllib import urlopen, urlencode
 from xml.dom.minidom import parseString
+from marjubot import NICK as BOT_NICK
 
 def getInfo():
-    return "!rand [rand] - väljastab rannainfot. Parameetrita käsk annab loendi"
+    return "!vesi [vesi] - väljastab rannainfot. Parameetrita käsk annab loendi"
 
 def getResponseType():
     return "MSG"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
+    if (not parameter):
+        return
+    params = {'bot' : BOT_NICK, 'nick' : author, 'chan' : channel, 'place' : parameter}
+    url = "http://geoff.nohik.net/meowbeach.php?" + urlencode(params)
+    return urlopen(url).read()
+
+def get_old(parameter, channel, author, folder):
     return "Info olemas ainult rannahooajal"
     url = "http://www.g4s.ee/beaches2.php"
     xml = urlopen(url).read()

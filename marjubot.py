@@ -179,7 +179,7 @@ class MarjuBot(SingleServerIRCBot):
     def commandWorker(self, cmd, parameter, channel, author):
         plugin = pluginloader.load(COMMAND_PLUGINS[cmd])
         responseType = plugin.getResponseType()
-        response = plugin.get(parameter, self.channels[channel].folder)
+        response = plugin.get(parameter, channel, author, self.channels[channel].folder)
         self.sendResponse(response, responseType, channel, author)
 
     def sendResponse(self, response, responseType, channel, author):

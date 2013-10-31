@@ -9,7 +9,7 @@ def getInfo():
 def getResponseType():
     return "MSG"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     file = open(folder + "/tsitaadid.txt")
     matches = []
     for line in file:

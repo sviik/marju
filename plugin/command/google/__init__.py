@@ -11,7 +11,7 @@ def getInfo():
 def getResponseType():
     return "MSG"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     if (not parameter):
         return None
     url = 'https://www.googleapis.com/customsearch/v1'

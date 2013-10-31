@@ -2,7 +2,8 @@
 # coding=utf-8
 
 from string import replace
-from urllib import urlopen
+from urllib import urlopen, urlencode
+from marjubot import NICK as BOT_NICK
 import re
 
 tartuIlmRe = re.compile('Temperatuur</A></TD><TD align="left" width="45%"><B>(?P<value>.*?) &deg;C</B>')
@@ -13,7 +14,14 @@ def getResponseType():
 def getInfo():
     return "!ilm [asukoht] - väljastab asukoha temperatuuri. Parameetrita käsk annab asukohaloendi"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
+    if (not parameter):
+        return "Olemasolevad kohad: Dirhami, Heltermaa, Jõgeva, Jõhvi, Kihnu, Kunda, Kuusiku, Lääne-Nigula, Narva-Jõesuu, Pakri, Pärnu, Ristna, Rohuküla, Rohuneeme, Roomassaare, Ruhnu, Sõrve, Tallinn, Tartu, Tiirikoja, Türi, Valga, Viljandi, Vilsandi, Virtsu, Võru, Väike-Maarja"
+    params = {'bot' : BOT_NICK, 'nick' : author, 'chan' : channel, 'place' : parameter}
+    url = "http://geoff.nohik.net/meowtemp.php?" + urlencode(params)
+    return urlopen(url).read()
+
+def get_old(parameter, channel, author, folder):
     linn = parameter.title()
     if (linn == 'Tar' or linn == 'Tart' or linn == 'Tartu'):
         return get_tartu_ilm()

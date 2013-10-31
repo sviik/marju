@@ -11,7 +11,7 @@ def getResponseType():
 def getInfo():
     return "!fml - Suvaline postitus saidilt fmylife.com"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     url = "http://api.fmylife.com/view/random/?key=" + config.FML_KEY + "&language=en"
     content = urlopen(url).read()
     dom = parseString(content)

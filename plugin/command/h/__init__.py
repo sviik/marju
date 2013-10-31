@@ -8,9 +8,9 @@ def getResponseType():
     return "NOTICE"
 
 def getInfo():
-    return "!addquote [tsitaat] - lisab tsitaadi"
+    return "!h kuvab selle nimekirja"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     help = []
     help.append("!seen [nick] - millal kasutaja viimati kanalis viibis")
     for i in COMMAND_PLUGINS.keys():

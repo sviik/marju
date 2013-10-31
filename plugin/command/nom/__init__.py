@@ -14,7 +14,7 @@ def getInfo():
 def getResponseType():
     return "MSG"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     result = []
     link = re.search(noirRe, urlopen("http://www.cafenoir.ee").read())
     if (link):

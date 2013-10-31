@@ -10,7 +10,7 @@ def getInfo():
 def getResponseType():
     return "MSG"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     if parameter is None or parameter is "":
         return
 
