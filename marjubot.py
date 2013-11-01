@@ -167,7 +167,7 @@ class MarjuBot(SingleServerIRCBot):
         elif cmd in COMMAND_PLUGINS and self.isCommandAllowedForChannel(cmd, channel):
              threading.Thread(target=self.commandWorker, args=(cmd, parameter, channel, author)).start()
              return
-        self.sendResponse(msg, channel)
+        self.sendResponse(msg, "MSG", channel, author)
 
     def isCommandAllowedForChannel(self, cmd, channel):
         if (cmd in ["quote", "addquote", "quotestat"] and not self.channels[channel].quoting):

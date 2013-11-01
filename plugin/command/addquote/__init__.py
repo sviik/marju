@@ -7,7 +7,7 @@ def getResponseType():
 def getInfo():
     return "!addquote [tsitaat] - lisab tsitaadi"
 
-def get(parameter, folder):
+def get(parameter, channel, author, folder):
     with open(folder + "/tsitaadid.txt", "a") as f:
         f.write(parameter + "\n")
     return "Tsitaat lisatud!"
