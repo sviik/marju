@@ -16,44 +16,46 @@ def get(msg, author, folder):
     urls = re.findall(urlRe, msg)
     if (not urls):
         return
-    urls = [prepareUrl(url) for url in urls if not is4chan(url)]
-    urls = list(set(urls))
+
+    urls = {prepareUrl(url) : url for url in urls if not is4chan(url)}
 
     f = open(folder + "/links.txt","r")
     lines = f.readlines()
     f.close()
 
+    timestamp = str(int(time()))
+
     response = []
     for index, line in enumerate(lines):
         if not urls:
-            break;
+            break
         data = line.rstrip().split(" ")
         found = None
-        for url in urls:
-            if (data[0] != url):
+        for prepUrl, url in urls.iteritems():
+            if (data[1] != prepUrl):
                 continue
-            count = int(data[1])
+            count = int(data[2])
             countStr = "(x" + str(count) + ")" if count > 1 else ""
-            nick = "<" + data[2] + ">"
-            firstTime = datetime.fromtimestamp(int(data[3])).strftime("%d/%m/%Y %H:%M:%S")
+            nick = "<" + data[3] + ">"
+            firstTime = datetime.fromtimestamp(int(data[4])).strftime("%d/%m/%Y %H:%M:%S")
             response.append("old!!! " + countStr + " Algselt linkis " + nick + " " + firstTime)
-            lines[index] = buildLine(data[0], count + 1, data[2], data[3])
-            found = url
+            lines.remove(line)
+            lines.append(buildLine(data[0], data[1], count + 1, data[3], data[4], timestamp))
+            found = prepUrl
         if found is not None:
-            urls.remove(found)
+            del urls[found]
     f = open(folder + "/links.txt","w")
     for line in lines:
         f.write(line)
-    for url in urls:
-        timestamp = str(int(time()))
-        line = buildLine(url, 1, author, timestamp)
+    for prepUrl, url in urls.iteritems():
+        line = buildLine(url[0], prepUrl, 1, author, timestamp, timestamp)
         f.write(line)
     f.close()
     return response
 
-def buildLine(url, count, nick, timestamp):
+def buildLine(prefix, url, count, nick, firstTimestamp, lastTimestamp):
     count = str(count)
-    return url + " " + count + " " + nick + " " + timestamp + "\n"
+    return prefix + " " + url + " " + count + " " + nick + " " + firstTimestamp + " " + lastTimestamp + "\n"
 
 def is4chan(url):
     return "4chan.org" in url[1]
