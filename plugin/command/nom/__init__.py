@@ -4,7 +4,7 @@
 import re
 from urllib import urlopen
 
-paevapraedRe = re.compile('<p class="food" id="(PREMIUM|TRUFFE|VAGAMAMA|FEELGOOD|POLPO)_FOOD">(.+?)</p>', re.DOTALL)
+paevapraedRe = re.compile('<p class="food" id="(PREMIUM|TRUFFE|VAGAMAMA|FEELGOOD|POLPO|UT)_FOOD">(.+?)</p>', re.DOTALL)
 noirRe = re.compile('<div class="article-box.+?location = \'(.+?)\'">')
 noirArticleRe = re.compile('<div class="content-texts-wrapper.+?<h1>(.+?)<span.+?>(.+?)</span.+?<h2>(.+?)</h2>', re.DOTALL)
 
