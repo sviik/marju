@@ -6,7 +6,7 @@ from xml.dom.minidom import parseString
 from marjubot import NICK as BOT_NICK
 
 def getInfo():
-    return "!vesi [vesi] - väljastab rannainfot. Parameetrita käsk annab loendi"
+    return "!vesi [vesi] - väljastab rannainfot"
 
 def getResponseType():
     return "MSG"

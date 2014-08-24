@@ -20,7 +20,7 @@ def get(msg, author, folder):
         url = 'http://gdata.youtube.com/feeds/api/videos/' + id + '?v=2&alt=jsonc'
         result = urlopen(url).read()
         info = json.loads(result)
-        if ('error' in response):
+        if ('error' in info):
             continue
         title = info['data']['title'].encode("utf-8")
         response.append(title)
