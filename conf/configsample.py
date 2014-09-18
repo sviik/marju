@@ -4,33 +4,34 @@ PASSWORD = 'marjupassword'
 SERVER = "some.server.org"
 PORT = 6667
 
-OWNER_NICK="nick"
-OWNER_PASS="pass"
+OWNER_NICK = "nick"
+OWNER_PASS = "pass"
 
 GOOGLE_KEY = '?key=yourGoogleKeyHere'
 GOOGLE_CX = '&cx=yourGoogleCxHere'
 
 FML_KEY = 'yourFmlKeyHere'
-
 LASTFM_KEY = 'yourlastfmkey'
 
-marjutest = {}
-marjutest["name"] = "#marjutest"
-marjutest["folder"] = "marjutest"
-marjutest["logging"] = True
-marjutest["ai"] = True
-marjutest["old"] = True
-marjutest["quoting"] = True
-marjutest["seen"] = True
+marjutest = {
+    "name": "#marjutest",
+    "folder": "marjutest",
+    "logging": True,
+    "ai": True,
+    "old": True,
+    "quoting": True,
+    "seen": True
+}
 
-mingikanal = {}
-mingikanal["name"] = "#minukanal"
-mingikanal["folder"] = "minukanal"
-mingikanal["logging"] = False
-mingikanal["ai"] = True
-marjutest["old"] = False
-mingikanal["quoting"] = True
-mingikanal["seen"] = False
+mingikanal = {
+    "name": "#minukanal",
+    "folder": "minukanal",
+    "logging": False,
+    "ai": True,
+    "old": False,
+    "quoting": True,
+    "seen": False
+}
 
 channels = {
     marjutest["name"]: marjutest,
