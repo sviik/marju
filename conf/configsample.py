@@ -12,6 +12,8 @@ GOOGLE_CX = '&cx=yourGoogleCxHere'
 
 FML_KEY = 'yourFmlKeyHere'
 
+LASTFM_KEY = 'yourlastfmkey'
+
 marjutest = {}
 marjutest["name"] = "#marjutest"
 marjutest["folder"] = "marjutest"
