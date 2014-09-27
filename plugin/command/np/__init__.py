@@ -2,31 +2,39 @@
 # coding=utf-8
 
 import json
-from urllib import urlopen
+from urllib import urlopen, urlencode
 from conf import config
 
 
 def getResponseType():
     return "MSG"
 
-
 def getInfo():
     return "!np [kasutajanimi] - Tagastab last.fm-s hetkel mängiva loo"
 
 
-def get(parameter, channel, author, folder):
-    username = parameter.split(" ")[0]
-    if not username:
-        return "Kasutajanimeta ei saa näidata, mis laul mängib"
+class UserNotFoundError(BaseException):
+    pass
 
-    playingTrack = findPlayingTrack(username)
+def get(parameter, channel, author, folder):
+    username = parameter
+    if not username:
+        return "Kasutajanimi on puudu"
+
+    try:
+        playingTrack = findPlayingTrack(username)
+    except UserNotFoundError:
+        return "Kasutajat ei leitud"
+
     if playingTrack:
         return formatPlayingTrack(playingTrack)
-    return "%s ei kuula hetkel midagi" % username
 
+    return "%s ei kuula hetkel midagi" % username
 
 def findPlayingTrack(username):
     tracks = getRecentTracks(username)
+    if not tracks:
+        return None
     for track in tracks:
         attributes = track.get('@attr')
         if attributes:
@@ -34,21 +42,19 @@ def findPlayingTrack(username):
                 return track
     return None
 
-
 def getRecentTracks(username):
-    url = "http://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=%s&api_key=%s&limit=1&format=json" % \
-          (username, config.LASTFM_KEY)
+    params = {'method': 'user.getrecenttracks', 'user': username, 'api_key': config.LASTFM_KEY, 'limit': '1', 'format': 'json'}
+    url = "http://ws.audioscrobbler.com/2.0/?" + urlencode(params)
     content = urlopen(url).read()
     data = json.loads(content)
-
+    if "error" in data and data["error"] == 6:
+        raise UserNotFoundError
     recentTracks = data.get('recenttracks')
     if not recentTracks:
         return []
-
     trackEntry = recentTracks.get('track')
     # Response might be a dict or a list, make a list of it either way
     return [trackEntry] if type(trackEntry) == dict else trackEntry
-
 
 def formatPlayingTrack(track):
     album = track.get('album')

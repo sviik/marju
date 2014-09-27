@@ -1,7 +1,7 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
-from urllib import urlopen
+from urllib import urlopen, urlencode
 import json
 import conf.config as config
 
@@ -14,12 +14,8 @@ def getResponseType():
 def get(parameter, channel, author, folder):
     if (not parameter):
         return None
-    url = 'https://www.googleapis.com/customsearch/v1'
-    key = config.GOOGLE_KEY
-    cx = config.GOOGLE_CX
-    num = '&num=3'
-    query = '&q=' + parameter.replace(' ', '+')
-    url = url + key + cx + num + query
+    params = {'key': config.GOOGLE_KEY, 'cx': config.GOOGLE_CX, 'num': 3, 'q': parameter}
+    url = 'https://www.googleapis.com/customsearch/v1?' + urlencode(params)
     r = urlopen(url).read()
     response = json.loads(r)
     if (response['searchInformation']['totalResults'] == '0'):

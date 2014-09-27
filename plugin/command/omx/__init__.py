@@ -3,6 +3,7 @@
 
 import codecs
 import urllib2
+from urllib import urlencode
 
 def getInfo():
     return "!omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi"
@@ -14,7 +15,8 @@ def get(parameter, channel, author, folder):
     if parameter is None or parameter is "":
         return
 
-    usock = urllib2.urlopen("http://www.nasdaqomxbaltic.com/market/?pg=mainlist&market=XTAL&downloadcsv=1&csv_style=englishc")
+    params = {'pg': 'mainlist', 'market': 'XTAL', 'downloadcsv': '1', 'csvstyle': 'englishc'}
+    usock = urllib2.urlopen("http://www.nasdaqomxbaltic.com/market/?" + urlencode(params))
     reader = codecs.getreader("utf-16")
     fh = reader(usock)
 

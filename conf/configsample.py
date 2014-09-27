@@ -7,8 +7,8 @@ PORT = 6667
 OWNER_NICK = "nick"
 OWNER_PASS = "pass"
 
-GOOGLE_KEY = '?key=yourGoogleKeyHere'
-GOOGLE_CX = '&cx=yourGoogleCxHere'
+GOOGLE_KEY = 'yourGoogleKeyHere'
+GOOGLE_CX = 'yourGoogleCxHere'
 
 FML_KEY = 'yourFmlKeyHere'
 LASTFM_KEY = 'yourlastfmkey'

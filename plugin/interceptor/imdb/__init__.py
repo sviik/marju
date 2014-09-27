@@ -1,7 +1,7 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
-from urllib import urlopen
+from urllib import urlopen, urlencode
 import re
 import json
 
@@ -16,32 +16,21 @@ def get(msg, author, folder):
         return
     matches = list(set(matches))
 
-    ids = ""
+    baseUrl = "http://www.omdbapi.com/?"
+    movies = []
     for match in matches:
-        ids = ids + match[1] + "%2C"
-    ids = ids[:-3]
+        params = {'i': match[1]}
+        url = baseUrl + urlencode(params)
+        r = urlopen(url).read()
+        movies.append(json.loads(r))
 
-    url = "http://mymovieapi.com/?ids=" + ids + "&type=json&plot=simple&episode=1&lang=en-US&aka=simple&release=simple&business=0&tech=0"
-
-    result = urlopen(url).read()
-    try:
-        movies = json.loads(result)
-    except ValueError:
-        return
-
-    if ('error' in movies):
-        return
-
-    response = []
+    result = []
     for movie in movies:
-        title = movie['title'].encode("utf-8")
-        year =  " " + str(movie['year']) if "year" in movie else ""
-        rating = "[" + str(movie['rating']) + "] " if "rating" in movie else ""
-        plot =  "- " + movie['plot_simple'].encode("utf-8") if "plot_simple" in movie else ""
-        countries = ""
-        for country in movie['country']:
-            countries = countries + country.encode("utf-8") + "/"
-        countries = countries[:-1]
-        response.append(title + " (" + countries + year + ") " + rating + plot)
+        title = movie['Title'].encode("utf-8")
+        year = " " + str(movie['Year']) if "Year" in movie else ""
+        rating = "[" + str(movie['imdbRating']) + "] " if "imdbRating" in movie else ""
+        plot = "- " + movie['Plot'].encode("utf-8") if "Plot" in movie else ""
+        country = movie['Country'].encode("utf-8") if "Country" in movie else ""
+        result.append(title + " (" + country + year + ") " + rating + plot)
 
-    return response
+    return result

@@ -2,7 +2,7 @@
 # coding=utf-8
 
 import conf.config as config
-from urllib import urlopen
+from urllib import urlopen, urlencode
 from xml.dom.minidom import parseString
 
 def getResponseType():
@@ -12,7 +12,8 @@ def getInfo():
     return "!fml - Suvaline postitus saidilt fmylife.com"
 
 def get(parameter, channel, author, folder):
-    url = "http://api.fmylife.com/view/random/?key=" + config.FML_KEY + "&language=en"
+    params = {'key': config.FML_KEY, 'language': 'en'}
+    url = "http://api.fmylife.com/view/random/?" + urlencode(params)
     content = urlopen(url).read()
     dom = parseString(content)
     text = dom.getElementsByTagName('text')[0]

@@ -2,7 +2,7 @@
 # coding=utf-8
 
 import json
-from urllib import urlopen
+from urllib import urlopen, urlencode
 
 def getInfo():
     return "!imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi"
@@ -11,8 +11,8 @@ def getResponseType():
     return "MSG"
 
 def get(parameter, channel, author, folder):
-    title = parameter.replace(' ', '+')
-    url = "http://www.imdbapi.com/" + "?t=" + title + "&plot=short"
+    params = {'t': parameter, 'plot': 'short'}
+    url = "http://www.imdbapi.com/?" + urlencode(params)
     r = urlopen(url).read()
     response = json.loads(r)
     if (response['Response'] == "True"):
@@ -23,6 +23,6 @@ def get(parameter, channel, author, folder):
         plot = response["Plot"].encode("utf-8")
         if plot is not "":
             plot = "- " + plot
-        return title + " (" + year + ") [" + rating + "] http://www.imdb.com/title/" + id + "/ " + plot;
+        return title + " (" + year + ") [" + rating + "] http://www.imdb.com/title/" + id + "/ " + plot
     else:
         return "Ei leidnud seda filmi"
