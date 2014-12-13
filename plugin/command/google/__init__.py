@@ -5,6 +5,9 @@ from urllib import urlopen, urlencode
 import json
 import conf.config as config
 
+def getCommands():
+    return ["google", "g"]
+
 def getInfo():
     return "!google [otsingufraas] - Google otsing"
 

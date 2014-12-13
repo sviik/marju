@@ -4,6 +4,9 @@
 import json
 from urllib import urlopen, urlencode
 
+def getCommands():
+    return ["imdb"]
+
 def getInfo():
     return "!imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi"
 

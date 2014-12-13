@@ -1,8 +1,12 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
-from marjubot import COMMAND_PLUGINS
+#from marjubot import COMMAND_PLUGINS
+import marjubot
 import pluginloader
+
+def getCommands():
+    return ["h"]
 
 def getResponseType():
     return "NOTICE"
@@ -13,6 +17,6 @@ def getInfo():
 def get(parameter, channel, author, folder):
     help = []
     help.append("!seen [nick] - millal kasutaja viimati kanalis viibis")
-    for i in COMMAND_PLUGINS.keys():
-        help.append(pluginloader.load(COMMAND_PLUGINS[i]).getInfo())
+    for i in marjubot.COMMAND_PLUGINS.keys():
+        help.append(pluginloader.load(marjubot.COMMAND_PLUGINS[i]).getInfo())
     return help

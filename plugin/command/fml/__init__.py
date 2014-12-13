@@ -5,6 +5,9 @@ import conf.config as config
 from urllib import urlopen, urlencode
 from xml.dom.minidom import parseString
 
+def getCommands():
+    return ["fml"]
+
 def getResponseType():
     return "MSG"
 

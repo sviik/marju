@@ -1,6 +1,9 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
+def getCommands():
+    return ["quotestat"]
+
 def getInfo():
     return "!quotestat [otsisõna] - väljastab otsisõna sisaldavate tsitaatide koguarvu"
 

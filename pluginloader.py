@@ -17,11 +17,15 @@ def findAllInterceptorPlugins():
 def findAllPlugins(folder):
     plugins = {}
     for i in os.listdir(folder):
+        print(i)
         location = os.path.join(folder, i)
         if not os.path.isdir(location) or not MainModule + ".py" in os.listdir(location):
             continue
         info = imp.find_module(MainModule, [location])
-        plugins[i] = {"name": i, "info": info}
+        plugin = {"name": i, "info": info}
+        commands = load(plugin).getCommands()
+        for command in commands:
+            plugins[command] = plugin
     return plugins
 
 def load(plugin):

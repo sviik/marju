@@ -4,6 +4,9 @@
 from urllib import urlopen, urlencode
 from marjubot import NICK as BOT_NICK
 
+def getCommands():
+    return ["ilm"]
+
 def getResponseType():
     return "MSG"
 

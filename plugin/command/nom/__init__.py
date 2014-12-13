@@ -8,6 +8,9 @@ paevapraedRe = re.compile('<p class="food" id="(TRUFFE|VILDE|FEELGOOD|POLPO|UT)_
 noirRe = re.compile('<div class="article-box.+?location = \'(.+?)\'">')
 noirArticleRe = re.compile('<div class="content-texts-wrapper.+?<h1>(.+?)<span.+?>(.+?)</span.+?<h2>(.+?)</h2>', re.DOTALL)
 
+def getCommands():
+    return ["nom"]
+
 def getInfo():
     return "!nom - Kokkuvõte tänastest Tartu restoranide päevapakkumistest"
 

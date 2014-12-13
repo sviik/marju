@@ -5,6 +5,8 @@ import json
 from urllib import urlopen, urlencode
 from conf import config
 
+def getCommands():
+    return ["np"]
 
 def getResponseType():
     return "MSG"

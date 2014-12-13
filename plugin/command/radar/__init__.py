@@ -1,6 +1,9 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
+def getCommands():
+    return ["radar"]
+
 def getResponseType():
     return "MSG"
 

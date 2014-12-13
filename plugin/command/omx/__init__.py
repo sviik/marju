@@ -5,6 +5,9 @@ import codecs
 import urllib2
 from urllib import urlencode
 
+def getCommands():
+    return ["omx"]
+
 def getInfo():
     return "!omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi"
 

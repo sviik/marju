@@ -3,6 +3,9 @@
 
 from random import choice
 
+def getCommands():
+    return ["quote"]
+
 def getInfo():
     return "!quote [otsisõna] - väljastab suvalise otsisõna sisaldava tsitaadi"
 
