@@ -1,7 +1,6 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
-#from marjubot import COMMAND_PLUGINS
 import marjubot
 import pluginloader
 

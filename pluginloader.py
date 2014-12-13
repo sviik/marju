@@ -17,7 +17,6 @@ def findAllInterceptorPlugins():
 def findAllPlugins(folder):
     plugins = {}
     for i in os.listdir(folder):
-        print(i)
         location = os.path.join(folder, i)
         if not os.path.isdir(location) or not MainModule + ".py" in os.listdir(location):
             continue
