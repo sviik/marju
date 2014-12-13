@@ -148,7 +148,7 @@ class MarjuBot(SingleServerIRCBot):
             parameter = command[1].rstrip('\n')
         command = command[0]
         if (len(command) > 1 and command[0] == "!"):
-            self.doCommand(e, command[1:], parameter)
+            self.doCommand(e, command[1:].lower(), parameter)
             return True
         return False
 
