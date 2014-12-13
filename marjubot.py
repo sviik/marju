@@ -46,7 +46,7 @@ class MarjuBot(SingleServerIRCBot):
         for ch in self.channelsDict.keys():
             channel = Channel()
             channel.logging = self.channelsDict[ch]["logging"]
-            channel.folder = self.channelsDict[ch]["folder"]
+            channel.folder = "channels/" + self.channelsDict[ch]["folder"]
             channel.ai = self.channelsDict[ch]["ai"]
             channel.old = self.channelsDict[ch]["old"]
             channel.quoting = self.channelsDict[ch]["quoting"]
@@ -92,7 +92,7 @@ class MarjuBot(SingleServerIRCBot):
             if (not channel in self.channels):
                 newChannel = Channel()
                 newChannel.logging = self.channelsDict[channel]["logging"]
-                newChannel.folder = self.channelsDict[channel]["folder"]
+                newChannel.folder = "channels/" + self.channelsDict[channel]["folder"]
                 newChannel.ai = self.channelsDict[channel]["ai"]
                 newChannel.old = self.channelsDict[channel]["old"]
                 newChannel.quoting = self.channelsDict[channel]["quoting"]

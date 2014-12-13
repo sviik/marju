@@ -41,3 +41,6 @@ nosetests.xml
 
 # Local config
 conf/config.py
+
+# Local channel files
+channels
