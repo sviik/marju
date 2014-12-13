@@ -8,7 +8,7 @@ def getCommands():
     return ["trans", "tr"]
 
 def getInfo():
-    return "[lähtekeele kood] [sihtkeele kood] [tekst] Tõlkefunktsioon"
+    return "[lähtekeele kood] [sihtkeele kood] [tekst] Microsoft Translatori tõlkefunktsioon"
 
 def getResponseType():
     return "MSG"
