@@ -19,6 +19,6 @@ def get(parameter, channel, author, folder):
     params = parameter.split(" ",2)
     client = Translator(config.AZURE_CLIENT_ID, config.AZURE_CLIENT_SECRET)
     try:
-        return client.translate(params[2], params[1], from_lang=params[0]).encode("utf-8")
+        return client.translate(params[2].decode("utf-8"), params[1], from_lang=params[0]).encode("utf-8")
     except:
         return "Viga! Kasutamine: !trans lähtekeelekood sihtkeelekood tekst"
