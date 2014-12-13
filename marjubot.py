@@ -42,6 +42,7 @@ class MarjuBot(SingleServerIRCBot):
         pass
 
     def on_welcome(self, c, e):
+        c.privmsg("nickserv", "identify " + PASSWORD)
         for ch in self.channelsDict.keys():
             channel = Channel()
             channel.logging = self.channelsDict[ch]["logging"]
@@ -52,7 +53,6 @@ class MarjuBot(SingleServerIRCBot):
             channel.seen = self.channelsDict[ch]["seen"]
             self.channels[ch] = channel
             c.join(ch)
-        c.privmsg("nickserv", "identify " + PASSWORD)
 
     def on_topic(self, c, e):
         self.logger.logTopic(e)
