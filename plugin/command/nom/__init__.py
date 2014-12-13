@@ -4,7 +4,7 @@
 import re
 from urllib import urlopen
 
-paevapraedRe = re.compile('<p class="food" id="(PREMIUM|TRUFFE|VAGAMAMA|FEELGOOD|POLPO|UT)_FOOD">(.+?)</p>', re.DOTALL)
+paevapraedRe = re.compile('<p class="food" id="(TRUFFE|VILDE|FEELGOOD|POLPO|UT)_FOOD">(.+?)</p>', re.DOTALL)
 noirRe = re.compile('<div class="article-box.+?location = \'(.+?)\'">')
 noirArticleRe = re.compile('<div class="content-texts-wrapper.+?<h1>(.+?)<span.+?>(.+?)</span.+?<h2>(.+?)</h2>', re.DOTALL)
 
@@ -26,5 +26,5 @@ def get(parameter, channel, author, folder):
     if (matches):
         for match in matches:
             result.append(match[0] + ": " + match[1].replace("<br/>", "; ").replace("<br />", "; "))
-
+    result.append('VAGAMAMA: nuudlid')
     return result
