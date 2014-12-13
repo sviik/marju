@@ -4,18 +4,18 @@ marju2
 Marju 2.0
 
 +++Seadistamine+++
-- /conf/ kausta tekitada konfifail. N‰idis 'configsample.py' on olemas. Muuhulgas on vaja lisada Google ja FML API'de koodid.
-- M‰‰rata marjubot.py's kasutatav konfifail, nt 'import conf.configsample as config'
-- Tekitada vastavalt konfitud kanalitele kaustad. Nt teha folder /minukanal/. Seal hoitakse tsitaadifaile, logi jms.
+- /conf/ kausta tekitada konfifail. N√§idis 'configsample.py' on olemas. Muuhulgas on vaja lisada Google ja FML API'de koodid.
+- M√§√§rata marjubot.py's kasutatav konfifail, nt 'import conf.configsample as config'
+- Tekitada vastavalt konfitud kanalitele kaustad alamkausta 'channels'. Seal hoitakse tsitaadifaile, logi jms.
 
 +++Muu+++
-- Vıiks jooksutada Python 2.6 vıi 2.7 peal. Sobib ka 3.x, kuid mingis kohas see feilis m‰letamistmˆˆda.
+- V√µiks jooksutada Python 2.6 v'i 2.7 peal. Sobib ka 3.x, kuid mingis kohas see feilis maletamistm√∂√∂da.
 - Exceptioni korral logitakse stacktrace enne sulgumist faili exceptions.log
-- Debugimiseks seada failis irclib.py lipu DEBUG v‰‰rtuseks 1
 
 +++TODO list+++
-- !nom k‰sule otsinguvıimalus
-- kıik k‰sud eraldi pluginatesse
+- !nom kasule otsinguv√µimalus
+- !seen k√§sk eraldi pluginasse
 - Youtube videode otsing
-- REFACTORDADA TƒIEGA
+- t√µlkefunktsioon
+- REFACTORDADA T√ÑIEGA
 - ????
