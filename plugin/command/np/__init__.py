@@ -12,7 +12,7 @@ def getResponseType():
     return "MSG"
 
 def getInfo():
-    return "!np [kasutajanimi] - Tagastab last.fm-s hetkel mängiva loo"
+    return "[kasutajanimi] Tagastab last.fm-s hetkel mängiva loo"
 
 
 class UserNotFoundError(BaseException):

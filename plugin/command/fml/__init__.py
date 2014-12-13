@@ -12,7 +12,7 @@ def getResponseType():
     return "MSG"
 
 def getInfo():
-    return "!fml - Suvaline postitus saidilt fmylife.com"
+    return "Suvaline postitus saidilt fmylife.com"
 
 def get(parameter, channel, author, folder):
     params = {'key': config.FML_KEY, 'language': 'en'}

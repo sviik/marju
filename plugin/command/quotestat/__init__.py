@@ -5,7 +5,7 @@ def getCommands():
     return ["quotestat"]
 
 def getInfo():
-    return "!quotestat [otsisõna] - väljastab otsisõna sisaldavate tsitaatide koguarvu"
+    return "[otsisõna] Väljastab otsisõna sisaldavate tsitaatide koguarvu"
 
 def getResponseType():
     return "MSG"

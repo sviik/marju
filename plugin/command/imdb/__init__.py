@@ -8,7 +8,7 @@ def getCommands():
     return ["imdb"]
 
 def getInfo():
-    return "!imdb [Filmi nimi] - Tagastab filmi nime, aasta, hinde ja IMDB lingi"
+    return "[filmi nimi] Tagastab filmi nime, aasta, hinde ja IMDB lingi"
 
 def getResponseType():
     return "MSG"

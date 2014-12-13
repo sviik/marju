@@ -10,12 +10,19 @@ def getCommands():
 def getResponseType():
     return "NOTICE"
 
+def formatCommands(commands):
+    result = ""
+    for command in commands:
+        result = result + "!" + command + " "
+    return result
+
 def getInfo():
-    return "!h kuvab selle nimekirja"
+    return "Kuvab selle nimekirja"
 
 def get(parameter, channel, author, folder):
     help = []
-    help.append("!seen [nick] - millal kasutaja viimati kanalis viibis")
+    help.append("!seen [nick] Millal kasutaja viimati kanalis viibis")
     for i in marjubot.COMMAND_PLUGINS.keys():
-        help.append(pluginloader.load(marjubot.COMMAND_PLUGINS[i]).getInfo())
+        plugin = pluginloader.load(marjubot.COMMAND_PLUGINS[i])
+        help.append(formatCommands(plugin.getCommands()) + plugin.getInfo())
     return help

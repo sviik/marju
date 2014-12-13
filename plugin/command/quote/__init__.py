@@ -7,7 +7,7 @@ def getCommands():
     return ["quote"]
 
 def getInfo():
-    return "!quote [otsisõna] - väljastab suvalise otsisõna sisaldava tsitaadi"
+    return "[otsisõna] Väljastab suvalise tsitaadi, mis sisaldab otsisõna"
 
 def getResponseType():
     return "MSG"

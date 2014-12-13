@@ -8,7 +8,7 @@ def getCommands():
     return ["vesi"]
 
 def getInfo():
-    return "!vesi [vesi] - väljastab rannainfot"
+    return "[asukoht] Väljastab rannainfot"
 
 def getResponseType():
     return "MSG"

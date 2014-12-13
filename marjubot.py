@@ -155,7 +155,7 @@ class MarjuBot(SingleServerIRCBot):
     def doCommand(self, e, cmd, parameter):
         author = nm_to_n(e.source())
         channel = e.target()
-        msg = ""
+        msg = None
         if cmd == "disconnect":
             pass
             #self.disconnect()
@@ -164,10 +164,21 @@ class MarjuBot(SingleServerIRCBot):
             #self.die()
         elif cmd == "seen" and self.isCommandAllowedForChannel(cmd, channel):
             msg = self.getSeen(channel, parameter)
-        elif cmd in COMMAND_PLUGINS and self.isCommandAllowedForChannel(cmd, channel):
-             threading.Thread(target=self.commandWorker, args=(cmd, parameter, channel, author)).start()
-             return
-        self.sendResponse(msg, "MSG", channel, author)
+        else:
+            if not self.isCommandAllowedForChannel(cmd, channel):
+                return
+            plugin = self.findPluginByCommand(cmd)
+            if plugin:
+                threading.Thread(target=self.commandWorker, args=(plugin, parameter, channel, author)).start()
+            return
+        if msg:
+            self.sendResponse(msg, "MSG", channel, author)
+
+    def findPluginByCommand(self, cmd):
+        for plugin in COMMAND_PLUGINS.values():
+            if cmd in plugin["commands"]:
+                return pluginloader.load(plugin)
+        return None
 
     def isCommandAllowedForChannel(self, cmd, channel):
         if (cmd in ["quote", "addquote", "quotestat"] and not self.channels[channel].quoting):
@@ -176,8 +187,7 @@ class MarjuBot(SingleServerIRCBot):
             return False
         return True
 
-    def commandWorker(self, cmd, parameter, channel, author):
-        plugin = pluginloader.load(COMMAND_PLUGINS[cmd])
+    def commandWorker(self, plugin, parameter, channel, author):
         responseType = plugin.getResponseType()
         response = plugin.get(parameter, channel, author, self.channels[channel].folder)
         self.sendResponse(response, responseType, channel, author)

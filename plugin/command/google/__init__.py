@@ -9,7 +9,7 @@ def getCommands():
     return ["google", "g"]
 
 def getInfo():
-    return "!google [otsingufraas] - Google otsing"
+    return "[otsingufraas] Google otsing"
 
 def getResponseType():
     return "MSG"

@@ -23,8 +23,8 @@ def findAllPlugins(folder):
         info = imp.find_module(MainModule, [location])
         plugin = {"name": i, "info": info}
         commands = load(plugin).getCommands()
-        for command in commands:
-            plugins[command] = plugin
+        plugin["commands"] = commands
+        plugins[i] = plugin
     return plugins
 
 def load(plugin):

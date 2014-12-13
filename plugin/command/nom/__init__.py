@@ -12,7 +12,7 @@ def getCommands():
     return ["nom"]
 
 def getInfo():
-    return "!nom - Kokkuvõte tänastest Tartu restoranide päevapakkumistest"
+    return "Kokkuvõte tänastest Tartu restoranide päevapakkumistest"
 
 def getResponseType():
     return "MSG"

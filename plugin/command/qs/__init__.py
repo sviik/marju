@@ -8,7 +8,7 @@ def getCommands():
     return ['qs', 'õs', '6s']
 
 def getInfo():
-    return "!qs [otsisõna] - väljastab ÕS päringu vastuse"
+    return "[otsisõna] Väljastab ÕS päringu vastuse"
 
 def getResponseType():
     return "MSG"

@@ -9,7 +9,7 @@ def getCommands():
     return ["omx"]
 
 def getInfo():
-    return "!omx [aktsia lühinimi] - väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi"
+    return "[ticker] Väljastab OMX aktsia hetkehinna ja päevase tõusuprotsendi"
 
 def getResponseType():
     return "MSG"

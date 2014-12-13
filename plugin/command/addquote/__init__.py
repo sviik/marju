@@ -8,7 +8,7 @@ def getResponseType():
     return "NOTICE"
 
 def getInfo():
-    return "!addquote [tsitaat] - lisab tsitaadi"
+    return "Lisab tsitaadi"
 
 def get(parameter, channel, author, folder):
     with open(folder + "/tsitaadid.txt", "a") as f:
