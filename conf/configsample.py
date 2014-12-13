@@ -13,6 +13,9 @@ GOOGLE_CX = 'yourGoogleCxHere'
 FML_KEY = 'yourFmlKeyHere'
 LASTFM_KEY = 'yourlastfmkey'
 
+AZURE_CLIENT_ID = 'yourAzureClientId'
+AZURE_CLIENT_SECRET = 'youreAzureClientSecret'
+
 marjutest = {
     "name": "#marjutest",
     "folder": "marjutest",
