@@ -61,4 +61,4 @@ def getRecentTracks(username):
 def formatPlayingTrack(track):
     album = track.get('album')
     artist = track.get('artist')
-    return "%s - %s (%s)" % (artist.get('#text'), track.get('name'), album.get('#text'))
+    return "%s - %s (%s)" % (artist.get('#text').encode("utf-8"), track.get('name').encode("utf-8"), album.get('#text').encode("utf-8"))
