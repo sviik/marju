@@ -12,11 +12,12 @@ def getResponseType():
 
 def get(parameter, channel, author, folder):
     if (not parameter):
-        count = sum(1 for line in open(folder + '/tsitaadid.txt'))
+        with open(folder + "/tsitaadid.txt") as file:
+            count = sum(1 for line in file)
         return "Kokku on " + str(count) + " tsitaati."
     count = 0
-    file = open(folder + "/tsitaadid.txt")
-    for line in file:
-        if parameter.lower() in line.lower():
-            count += 1
+    with open(folder + "/tsitaadid.txt") as file:
+        for line in file:
+            if parameter.lower() in line.lower():
+                count += 1
     return 'Sõna "' + parameter + '" kohta on ' + str(count) + " tsitaati."
