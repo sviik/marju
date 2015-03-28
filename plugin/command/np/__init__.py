@@ -24,7 +24,7 @@ def get(parameter, channel, author, folder):
         return "Kasutajanimi on puudu"
 
     try:
-        playingTrack = findPlayingTrack(username)
+        playingTrack = findPlayingTrack(username.strip())
     except UserNotFoundError:
         return "Kasutajat ei leitud"
 
