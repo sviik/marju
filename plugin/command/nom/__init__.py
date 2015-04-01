@@ -21,7 +21,7 @@ def get(parameter, channel, author, folder):
     if (matches):
         for match in matches:
             info = match[0] + ": " + match[1].replace("<br/>", "; ").replace("<br />", "; ")
-            info = (data[:150] + '...') if len(data) > 150 else data
+            info = (info[:150] + '...') if len(info) > 150 else info
             result.append(info)
     result.append('VAGAMAMA: nuudlid')
     return result
