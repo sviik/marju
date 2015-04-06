@@ -17,5 +17,5 @@ def get(parameter, channel, author, folder):
     if (not parameter):
         return None
     params = {'bot' : BOT_NICK, 'query' : parameter, 'chan' : channel, 'place' : parameter, 'nick' : author}
-    url = "http://geoff.nohik.net/qs.php?" + urlencode(params)
+    url = "http://api.estchat.ee/qs.php?" + urlencode(params)
     return urlopen(url).read()
