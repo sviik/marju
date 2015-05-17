@@ -16,6 +16,5 @@ Marju 2.0
 - !nom kasule otsinguvõimalus
 - !seen käsk eraldi pluginasse
 - Youtube videode otsing
-- tõlkefunktsioon
 - REFACTORDADA TÄIEGA
 - ????

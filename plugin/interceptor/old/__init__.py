@@ -56,7 +56,7 @@ def buildLine(url, count, nick, timestamp):
     return url + " " + count + " " + nick + " " + timestamp + "\n"
 
 def is4chan(url):
-    return "4chan.org" in url[1]
+    return "4cdn.org" in url[1]
 
 def prepareUrl(url):
     url = url[1]

@@ -5,10 +5,6 @@ from time import time
 from ircbot import SingleServerIRCBot, Channel
 from irclib import nm_to_n, is_channel, parse_channel_modes
 from datetime import datetime
-import re
-import json
-from urllib import urlopen
-import random
 import conf.config as config
 import logging
 import sys

@@ -1,9 +1,10 @@
 #!/opt/csw/bin/python
 # coding=utf-8
 
-from urllib import urlopen
+from urllib import urlopen, urlencode
 import re
 import json
+import conf.config as config
 
 youtubeUrlRe = re.compile('(youtube\.com/watch\?v=|youtube\.com/watch\?.*&v=|youtu.be/)(?P<id>[A-Za-z0-9_-]{11})')
 
@@ -17,11 +18,11 @@ def get(msg, author, folder):
     response = []
     for match in matches:
         id = match[1]
-        url = 'http://gdata.youtube.com/feeds/api/videos/' + id + '?v=2&alt=jsonc'
-        result = urlopen(url).read()
-        info = json.loads(result)
-        if ('error' in info):
+        params = {'id': id, 'key': config.GOOGLE_KEY, 'fields': 'items(snippet(title))', 'part' : 'snippet'}
+        url = 'https://www.googleapis.com/youtube/v3/videos?' + urlencode(params)
+        result = json.loads(urlopen(url).read())
+        if ('error' in result):
             continue
-        title = info['data']['title'].encode("utf-8")
+        title = result['items'][0]['snippet']['title'].encode("utf-8")
         response.append(title)
     return response
