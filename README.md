@@ -1,20 +1,13 @@
-marju2
-======
+# Marju
 
-Marju 2.0
+## Configuration
+1. Create a configuratin file in `conf/`. Use `configsample.py` as an example
+2. Import the configuration file to `marjubot.py`, e.g `import conf.configsample as config`
 
-+++Seadistamine+++
-- /conf/ kausta tekitada konfifail. Näidis 'configsample.py' on olemas. Muuhulgas on vaja lisada Google ja FML API'de koodid.
-- Määrata marjubot.py's kasutatav konfifail, nt 'import conf.configsample as config'
-- Tekitada vastavalt konfitud kanalitele kaustad alamkausta 'channels'. Seal hoitakse tsitaadifaile, logi jms.
+## Running
+`python marjubot.py`
+Runs with Python 2.6 and 2.7. May have issues with Python 3.x
+Uncaught exceptions are logged to `exceptions.log`
 
-+++Muu+++
-- Võiks jooksutada Python 2.6 v'i 2.7 peal. Sobib ka 3.x, kuid mingis kohas see feilis maletamistmööda.
-- Exceptioni korral logitakse stacktrace enne sulgumist faili exceptions.log
-
-+++TODO list+++
-- !nom kasule otsinguvõimalus
-- !seen käsk eraldi pluginasse
-- Youtube videode otsing
-- REFACTORDADA TÄIEGA
-- ????
+## Tests
+YOLO
